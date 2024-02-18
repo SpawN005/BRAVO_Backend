@@ -33,5 +33,6 @@ jobs:
         with:
           image: bouzidijasser/bravofrontend
           registry: docker.io
+          dockerfile: DockerFile
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
