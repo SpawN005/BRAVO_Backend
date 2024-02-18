@@ -1,4 +1,4 @@
-const UserModel = require("../../models/users.model");
+const UserModel = require("../../models/users");
 const isEmpty = require("../../utils/isEmpty");
 const crypto = require("crypto");
 const validator = require("validator");

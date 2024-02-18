@@ -38,18 +38,10 @@ const userIdentitySchema = mongoose.Schema(
       type: String,
       // required: true
     },
-    gender: {
-      type: String,
-    },
-    birthDate: {
-      type: String,
-    },
-    Biography: {
-      type: String,
-    },
   },
   { _id: false }
 );
+
 const userSchema = mongoose.Schema({
   shouldReceiveInformations: {
     type: Boolean,

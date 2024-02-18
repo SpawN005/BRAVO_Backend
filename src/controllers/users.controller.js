@@ -1,4 +1,4 @@
-var UserModel = require("../models/users.model");
+var UserModel = require("../models/users");
 var crypto = require("crypto");
 //-------------------------------------------------------------
 // Inserting
