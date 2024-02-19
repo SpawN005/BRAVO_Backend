@@ -2,6 +2,9 @@ var mongoose = require("mongoose");
 const isEmpty = require("../utils/isEmpty.js");
 const type = ["LEAGUE", "KNOCKOUT", "GROUP_KNOCKOUT"];
 const breakingRules = ["NOP", "GD", "GS", "HTH", "MW", "CG"];
+
+
+
 const ruleSchema = new mongoose.Schema({
   type: {
     type: type,
@@ -37,6 +40,8 @@ const ruleSchema = new mongoose.Schema({
     },
   ],
 });
+
+
 const sponsorSchema = new mongoose.Schema({
   image: {
     type: Blob,
@@ -51,6 +56,7 @@ const sponsorSchema = new mongoose.Schema({
     required: true,
   },
 });
+
 const tournamentSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -89,4 +95,5 @@ const tournamentSchema = new mongoose.Schema({
     },
   ],
 });
+
 module.exports = mongoose.model("Tournaments", tournamentSchema);
