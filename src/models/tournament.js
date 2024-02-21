@@ -41,7 +41,7 @@ const ruleSchema = new mongoose.Schema({
   ],
 });
 
-
+/*
 const sponsorSchema = new mongoose.Schema({
   image: {
     type: Blob,
@@ -56,7 +56,7 @@ const sponsorSchema = new mongoose.Schema({
     required: true,
   },
 });
-
+*/
 const tournamentSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -83,11 +83,13 @@ const tournamentSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
     },
   ],
+  /*
   sponsors: [
     {
       type: sponsorSchema,
     },
   ],
+  */
   matches: [
     {
       type: mongoose.Schema.Types.ObjectId,
