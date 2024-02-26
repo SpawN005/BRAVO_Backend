@@ -4,6 +4,39 @@ const Tournament = require('../models/tournament');
  const Match = require('../models/matches');
 
 
+
+ const getMatchById = async (matchId) => {
+  try {
+    // Find the match by ID
+    const match = await Match.findById(matchId);
+
+    if (!match) {
+      throw { status: 404, message: 'Match not found' };
+    }
+
+    return match;
+  } catch (error) {
+    console.error('Error getting match by ID:', error);
+    throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
+  }
+};
+const updateMatchDateById = async (matchId, newDate) => {
+  try {
+    // Find the match by ID and update its date
+    const updatedMatch = await Match.findByIdAndUpdate(matchId, { date: newDate }, { new: true });
+
+    if (!updatedMatch) {
+      throw { status: 404, message: 'Match not found' };
+    }
+
+    return updatedMatch;
+  } catch (error) {
+    console.error('Error updating match date by ID:', error);
+    throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
+  }
+};
+
+
 const getTournamentById = async (tournamentId) => {
   try {
     const tournament = await Tournament.findById(tournamentId);
@@ -18,6 +51,8 @@ const getTournamentById = async (tournamentId) => {
     throw { status: 500, message: 'Internal Server Error' };
   }
 };
+
+
 
 const getTeamsInTournament = async (tournamentId) => {
   try {
@@ -143,7 +178,6 @@ const createKnockoutMatch = async (req, res) => {
   }
 };
 
-
 const createGroupMatches = async (tournamentId) => {
   try {
     const tournament = await Tournament.findById(tournamentId);
@@ -155,7 +189,7 @@ const createGroupMatches = async (tournamentId) => {
     const matches = [];
 
     if (tournament.rules?.type === 'LEAGUE' || tournament.rules?.type === 'GROUP_KNOCKOUT') {
-      tournament.groups.forEach((group) => {
+      tournament.groups.forEach(async (group) => { // Use async here
         const groupTeams = group.teams;
 
         for (let i = 0; i < groupTeams.length; i++) {
@@ -172,10 +206,10 @@ const createGroupMatches = async (tournamentId) => {
               // Add other properties for the match
             });
 
-            matches.push(newMatch);
-            
-            
+            // Save the new match to the database
+            const savedMatch = await newMatch.save();
 
+            matches.push(savedMatch);
           }
         }
       });
@@ -191,6 +225,8 @@ const createGroupMatches = async (tournamentId) => {
 };
 
 
+
+
    const getTeamById = async (teamId) => {
      try {
        const team = await Team.findById(teamId);
@@ -201,6 +237,19 @@ const createGroupMatches = async (tournamentId) => {
      }
    };
 
+   const getAllMatchesForTournament = async (tournamentId) => {
+    try {
+      // Find all matches for the specified tournament ID
+      const matches = await Match.find({ tournament: tournamentId });
+      return matches;
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+      throw { status: 500, message: 'Internal Server Error' };
+    }
+  };
+
+  
+
 
 module.exports = {
   getTournamentById,
@@ -209,5 +258,8 @@ module.exports = {
   createKnockoutMatch,
   getTeamById,
   createGroupMatches,
+  getAllMatchesForTournament,
+  getMatchById,
+  updateMatchDateById,
   // Add other match-related functions as needed
 };

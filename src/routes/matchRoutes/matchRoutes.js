@@ -89,6 +89,50 @@ router.post('/tournaments/:tournamentId/group-matches', async (req, res) => {
   }
 });
 
+router.get('/tournaments/:tournamentId/matches', async (req, res) => {
+  try {
+    const tournamentId = req.params.tournamentId;
+
+    // Call the controller method to get all matches for the specified tournament ID
+    const matches = await MatchController.getAllMatchesForTournament(tournamentId);
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error('Error fetching matches:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
+router.get('/:matchId', async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+
+    // Call the controller method to get the match by ID
+    const match = await MatchController.getMatchById(matchId);
+
+    res.status(200).json(match);
+  } catch (error) {
+    console.error('Error getting match by ID:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+router.patch('/:matchId/update-date', async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+    const newDate = req.body.date; // Assuming the new date is provided in the request body
+
+    // Call the controller method to update the date of the match by ID
+    const updatedMatch = await MatchController.updateMatchDateById(matchId, newDate);
+
+    res.status(200).json(updatedMatch);
+  } catch (error) {
+    console.error('Error updating match date by ID:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
+
+// not mine just for test 
  router.get('/:teamId', async (req, res) => {
   try {
     // Trim the teamId to remove extra whitespace or newline characters

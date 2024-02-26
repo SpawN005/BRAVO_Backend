@@ -64,8 +64,16 @@ const matchSchema = new mongoose.Schema({
     score: {
       type: Number,
     },
+    
   
   },
+  lineup: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Players",
+    },
+  ],
+
   // // referee: {
   // //   type: userSchema,
   // // },
