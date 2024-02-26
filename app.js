@@ -10,6 +10,10 @@ const usersRouter = require("./src/routes/usersRoutes/users.router");
 const tournamentRouter = require('./src/routes/tournamentRoutes/tournament.router'); 
 
 const swaggerDoc = require("./src/docs/swaggerDoc");
+const stadiumRoutes = require("./src/routes/stadiumRoutes/stadiumRoutes");
+const matchRoutes = require("./src/routes/matchRoutes/matchRoutes");
+
+
 
 
 
@@ -23,6 +27,15 @@ usersRouter(app);
 tournamentRouter(app);
 
 swaggerDoc(app);
+app.use("/stadiums", stadiumRoutes);
+// app.use("/match", matchRoutes);
+
+app.use("/matches", matchRoutes);
+
+
+
+
+
 // ==============================================
 // START THE SERVER
 // ==============================================
