@@ -13,6 +13,9 @@
   "author": "amir",
   "license": "ISC",
   "dependencies": {
+    "@tensorflow/tfjs": "^4.17.0",
+    "@tensorflow/tfjs-core": "^4.17.0",
+    "@tensorflow/tfjs-node": "3.18.0",
     "body-parser": "^1.19.0",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
@@ -24,6 +27,7 @@
     "mongoose": "^6.10.0",
     "node-uuid": "^1.4.8",
     "nodeman": "^1.1.2",
+    "nodemon": "^3.0.3",
     "swagger-jsdoc": "^3.4.0",
     "swagger-ui-express": "^4.1.1",
     "sync-request": "^6.1.0",
