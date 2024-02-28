@@ -1,6 +1,15 @@
 var mongoose = require("mongoose");
 const isEmpty = require("../utils/isEmpty.js");
 
+/**
+ * Permission Levels for User Schema:
+ * 1. Observer
+ * 2. Referee
+ * 3. Manager
+ * 4. Organizer
+ * 5. Admin
+ */
+
 const userAdressSchema = mongoose.Schema({
   cp: {
     type: Number,

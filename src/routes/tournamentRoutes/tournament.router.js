@@ -1,13 +1,13 @@
-const deleteRoutes = require('./delete')
-const getRoutes = require('./get')
-const patchRoutes = require('./patch')
 const postRoutes = require('./post')
+const getRoutes = require('./get')
+const deleteRoutes = require('./delete')
+const patchRoutes = require('./patch')
+
 
 const initializeRoutes = app => {
-  deleteRoutes(app);
-  getRoutes(app);
-  patchRoutes(app);
   postRoutes(app);
+  getRoutes(app);
+  deleteRoutes(app);
+  patchRoutes(app);
 };
 module.exports = initializeRoutes;
-  

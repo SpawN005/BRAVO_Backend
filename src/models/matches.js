@@ -1,58 +1,85 @@
-var mongoose = require("mongoose");
-var teamSchema = require("./team");
-var userSchema = require("./users");
-var stadiumSchema = require("./stadium");
+const mongoose = require("mongoose");
+const teamSchema = require("./team");
+const userSchema = require("./users");
+const stadiumSchema = require("./stadium");
 const playersSchema = require("./players");
+
 const statsSchema = new mongoose.Schema({
   redCards: [
     {
-      type: playersSchema,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Players",
     },
   ],
   yellowCards: [
     {
-      type: playersSchema,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Players",
     },
   ],
-
   assisters: [
     {
-      type: playersSchema,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Players",
     },
   ],
   scorers: [
     {
-      type: playersSchema,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Players",
     },
   ],
 });
+
 const matchSchema = new mongoose.Schema({
   date: {
     type: Date,
+    // required: true,
+  },
+  tournament: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Tournaments",
     required: true,
   },
+  stage: {
+    type: String, // "group" or "knockout"
+    required: true,
+  },
+  // group: {
+  //   type: mongoose.Schema.Types.ObjectId,
+  //   ref: "Groups",
+  // },
   team1: {
-    type: teamSchema,
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Team",
     required: true,
     score: {
       type: Number,
     },
   },
-
   team2: {
-    type: teamSchema,
-    // required: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Team",
+    required: true,
     score: {
       type: Number,
     },
+    
+  
   },
-  referee: {
-    type: userSchema,
-    // required: true
-  },
+  lineup: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Players",
+    },
+  ],
+
+  // // referee: {
+  // //   type: userSchema,
+  // // },
   stadium: {
-    type: stadiumSchema,
-    // required: true
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Staduims",
   },
   stats: {
     type: statsSchema,
