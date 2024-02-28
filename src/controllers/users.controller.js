@@ -21,11 +21,8 @@ exports.insert = (req, res) => {
 
       let newUser = {
         userIdentity: req.body,
-        permissionLevel: req.body.permissionLevel, 
+        permissionLevel: 4, 
       };
-
-
-
       //req.body.permissionLevel = req.body.permissionLevel || 1; // Default to level 1 if not specified
       UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
