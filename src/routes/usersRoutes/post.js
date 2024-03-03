@@ -31,6 +31,10 @@ const initializePostRoutes = (app) => {
     UsersController.insert,
   ]);
 
+  app.post("/person/new", [
+    UsersController.insert,
+  ]);
+
   /**
    * @swagger
    * /auth:

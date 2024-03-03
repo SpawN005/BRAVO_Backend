@@ -4,6 +4,7 @@ const isEmpty = require("../../utils/isEmpty");
 // const isPhone = require("../../utils/isPhone");
 
 exports.validJWTNeeded = (req, res, next) => {
+  console.log(req.headers)
   if (req.headers["authorization"]) {
     try {
       let authorization = req.headers["authorization"].split(" ");
