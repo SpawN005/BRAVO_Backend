@@ -18,7 +18,7 @@ router.get('/tournaments/:tournamentId', async (req, res) => {
     }
   }
 });
-router.get('/tournaments/teams/:tournamentId', async (req, res) => {
+router.get('/teams/:tournamentId', async (req, res) => {
     try {
       const tournamentId = req.params.tournamentId;
       const teams = await MatchController.getAllTeamsInTournament(tournamentId);
@@ -32,7 +32,7 @@ router.get('/tournaments/teams/:tournamentId', async (req, res) => {
       }
     }
   });
-  router.post('/tournaments/:tournamentId/knockout', async (req, res) => {
+  router.post('/knockout/:tournamentId', async (req, res) => {
     try {
         const { team1Id, team2Id, date } = req.body;
         const tournamentId = req.params.tournamentId;
@@ -50,7 +50,7 @@ router.get('/tournaments/teams/:tournamentId', async (req, res) => {
         res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
     }
 });
-router.post('/tournaments/:tournamentId/group-matches', async (req, res) => {
+router.post('/group-matches/:tournamentId', async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
 
@@ -63,7 +63,7 @@ router.post('/tournaments/:tournamentId/group-matches', async (req, res) => {
   }
 });
 
-router.get('/tournaments/:tournamentId/matches', async (req, res) => {
+router.get('/matches/:tournamentId', async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
 
@@ -90,7 +90,7 @@ router.get('/:matchId', async (req, res) => {
     res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
   }
 });
-router.patch('/:matchId/update-date', async (req, res) => {
+router.patch('update-date/:matchId', async (req, res) => {
   try {
     const matchId = req.params.matchId;
     const newDate = req.body.date; // Assuming the new date is provided in the request body
@@ -143,7 +143,5 @@ router.post('/update-score', async (req, res) => {
     res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
   }
 });
-
-
 
 module.exports = router;
