@@ -60,10 +60,11 @@ const initializeGetRoutes = (app) => {
    *       400:
    *         description: Bad request
    */
-  app.get("/users", [
-    ValidationMiddleware.validJWTNeeded,
-    UsersController.list,
-  ]);
+  app.get("/users", [ValidationMiddleware.validJWTNeeded, UsersController.list]);
+
+  app.get("/observers/:tournamentId", [UsersController.getObserversByTournamentId]);
+  app.get("/referees/:tournamentId", [UsersController.getRefereesByTournamentId]);
+
 };
 
 module.exports = initializeGetRoutes;

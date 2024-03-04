@@ -34,9 +34,6 @@ const ruleSchema = new mongoose.Schema({
   ],
 });
 
-
-/*
-
 const sponsorSchema = new mongoose.Schema({
   image: {
     type: String,
@@ -65,9 +62,6 @@ const groupSchema = new mongoose.Schema({
   ],
 });
 
-=======
-*/
-
 const tournamentSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -87,20 +81,6 @@ const tournamentSchema = new mongoose.Schema({
   },
   groups: [groupSchema], // Array of group objects
   sponsors: [sponsorSchema],
-  /*
-  groups: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-    },
-  ],
-  */
-  /*
-  sponsors: [
-    {
-      type: sponsorSchema,
-    },
-  ],
-  */
   matches: [
     {
       type: mongoose.Schema.Types.ObjectId,

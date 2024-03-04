@@ -1,6 +1,15 @@
 var mongoose = require("mongoose");
 const isEmpty = require("../utils/isEmpty.js");
 
+/**
+ * Permission Levels for User Schema:
+ * 1. Observer
+ * 2. Referee
+ * 3. Manager
+ * 4. Organizer
+ * 5. Admin
+ */
+
 const userAdressSchema = mongoose.Schema({
   cp: {
     type: Number,
@@ -57,6 +66,10 @@ const userSchema = mongoose.Schema({
   userAdress: {
     type: userAdressSchema,
   },
+  tournamentIds: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Tournaments' // Replace with your Tournament collection name if different
+  }],
 });
 
 const User = mongoose.model("Users", userSchema);
@@ -88,6 +101,21 @@ exports.findByEmail = (email) => {
       });
   });
 };
+//-------------------------------------------------------
+exports.findByTournamentId = (tournamentId) => {
+  return new Promise((resolve, reject) => {
+    User.find({ "tournamentIds": mongoose.Types.ObjectId(tournamentId) })
+      .select("-__v")
+      .exec(function (err, users) {
+        if (err || users.length === 0) {
+          reject(err || new Error("No users found with the given tournament ID"));
+        } else {
+          resolve(users);
+        }
+      });
+  });
+};
+
 //-------------------------------------------------------
 exports.patchUser = (id, userData) => {
   return new Promise((resolve, reject) => {

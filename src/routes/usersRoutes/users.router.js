@@ -10,3 +10,4 @@ const initializeRoutes = app => {
   postRoutes(app);
 };
 module.exports = initializeRoutes;
+  
