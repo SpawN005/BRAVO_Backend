@@ -4,32 +4,6 @@ const router = express.Router();
 const ValidationMiddleware = require('../../middlewares/validation/validation.middleware');
 
 
-
-
-/**
- * @swagger
- * /matches/tournaments/{tournamentId}:
- *   get:
- *     tags:
- *       - matches
- *     description: Get tournament details by ID
- *     produces:
- *       - application/json
- *     parameters:
- *       - name: tournamentId
- *         description: tournament id
- *         in: path
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Tournament details
- *       404:
- *         description: Tournament not found
- *       500:
- *         description: Internal Server Error
- */
 router.get('/tournaments/:tournamentId', async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
@@ -153,6 +127,23 @@ router.patch('/:matchId/update-date', async (req, res) => {
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+
+router.post('/update-score', async (req, res) => {
+  try {
+    // Add logic to update the score
+    const updatedScore = await MatchController.updateScore(req.body);
+
+    // Emit an event to notify clients about the updated score
+    io.emit('scoreUpdated', { updatedScore });
+
+    // Respond with the updated score
+    res.status(200).json({ updatedScore });
+  } catch (error) {
+    console.error('Error updating score:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
 
 
 module.exports = router;
