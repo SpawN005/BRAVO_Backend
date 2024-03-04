@@ -18,8 +18,16 @@ exports.insert = (req, res) => {
         .update(req.body.password)
         .digest("base64");
       req.body.password = salt + "$" + hash;
-      // req.body.permissionLevel = 1;
-      UserModel.createUser({ userIdentity: req.body }).then((result) => {
+
+      let newUser = {
+        userIdentity: req.body,
+        permissionLevel: req.body.permissionLevel, 
+      };
+
+
+
+      //req.body.permissionLevel = req.body.permissionLevel || 1; // Default to level 1 if not specified
+      UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
           result = result.toJSON();
           delete result.__v;
