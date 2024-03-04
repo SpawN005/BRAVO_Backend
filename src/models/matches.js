@@ -2,34 +2,9 @@ const mongoose = require("mongoose");
 const teamSchema = require("./team");
 const userSchema = require("./users");
 const stadiumSchema = require("./stadium");
-const playersSchema = require("./players");
+const playerSchema = require("./players");
 
-const statsSchema = new mongoose.Schema({
-  redCards: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
-    },
-  ],
-  yellowCards: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
-    },
-  ],
-  assisters: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
-    },
-  ],
-  scorers: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
-    },
-  ],
-});
+const matchStatSchema = require("./matchStats"); // Import matchStat schema
 
 const matchSchema = new mongoose.Schema({
   date: {
@@ -45,44 +20,27 @@ const matchSchema = new mongoose.Schema({
     type: String, // "group" or "knockout"
     required: true,
   },
-  // group: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: "Groups",
-  // },
   team1: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Team",
     required: true,
-    score: {
-      type: Number,
-    },
+  },
+  statsTeam1: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "MatchStats",
   },
   team2: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Team",
     required: true,
-    score: {
-      type: Number,
-    },
-    
-  
   },
-  lineup: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
-    },
-  ],
-
-  // // referee: {
-  // //   type: userSchema,
-  // // },
+  statsTeam2: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "MatchStats",
+  },
   stadium: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Staduims",
-  },
-  stats: {
-    type: statsSchema,
+    ref: "Stadiums",
   },
 });
 
