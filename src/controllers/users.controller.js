@@ -21,8 +21,8 @@ exports.insert = (req, res) => {
       if ([1, 2, 3].includes(permissionLevel)) {
         const randomPassword = generateRandomPassword();
         console.log(`Generated password for ${req.body.email}: ${randomPassword}`);
-        // Placeholder for sending email - to be implemented later
-        // sendPasswordEmail(req.body.email, randomPassword);
+        //Placeholder for sending email - to be implemented later
+        sendPasswordEmail(req.body.email, randomPassword);
 
         let salt = crypto.randomBytes(16).toString("base64");
         let hash = crypto.createHmac("sha512", salt).update(randomPassword).digest("base64");
@@ -152,8 +152,9 @@ exports.removeById = (req, res) => {
 exports.getObserversByTournamentId = (req, res) => {
   // Assuming 'tournamentsId' is the field in the UserModel that stores tournament IDs
   UserModel.findByTournamentId( req.params.tournamentId )
-      .then((observers) => {
-        
+      .then((users) => {
+        const observers = users.filter(user => user.permissionLevel === 1);
+
           if (observers.length > 0) {
               res.status(200).send({
                   code: 200,
@@ -183,7 +184,7 @@ exports.getRefereesByTournamentId = (req, res) => {
     .then((users) => {
         // Filter users by permissionLevel
         const referees = users.filter(user => user.permissionLevel === 3);
-
+        console.log(referees)
         if (referees.length > 0) {
             res.status(200).send({
                 code: 200,
@@ -206,4 +207,31 @@ exports.getRefereesByTournamentId = (req, res) => {
             error: error
         })
     );
+};
+
+
+const sendPasswordEmail = async (email, password) => {
+  let transporter = nodemailer.createTransport({
+    // Configure the transporter with your email service details
+    service: 'your_email_service', // e.g., 'gmail'
+    auth: {
+      user: 'your_email_address',
+      pass: 'your_email_password'
+    }
+  });
+
+  let mailOptions = {
+    from: 'your_email_address',
+    to: email,
+    subject: 'Your New Password',
+    text: `Your new password is: ${password}`
+    // You can also use HTML body content
+  };
+
+  try {
+    let info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+  } catch (error) {
+    console.error('Error sending email:', error);
+  }
 };
