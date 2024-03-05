@@ -8,6 +8,7 @@ router.post('/score/:matchId', async (req, res) => {
     const idmatch = req.params.matchId;
     const { idplayer1, idplayer2, idteam } = req.body;
 
+
     const result = await matchStatController.scoreGoal(idmatch, idplayer1, idplayer2, idteam);
 
     res.json(result);
@@ -17,6 +18,7 @@ router.post('/score/:matchId', async (req, res) => {
 });
 
 
+// lhistorique mta3 les actions fil tableau fil wosst
 
 
 router.post('/cancelGoal/:matchId', async (req, res) => {

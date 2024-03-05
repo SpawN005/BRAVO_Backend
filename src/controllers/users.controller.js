@@ -5,7 +5,6 @@ const { generateRandomPassword } = require('../utils/passwordUtils'); // Adjust 
 //-------------------------------------------------------------
 // Inserting
 exports.insert = (req, res) => {
-  console.log(req.body)
   UserModel.findByEmail(req.body.email)
     .then(() => {
       res.status(409).send({
@@ -15,14 +14,13 @@ exports.insert = (req, res) => {
       });
     })
     .catch(() => {
-      let permissionLevel = req.body.permissionLevel || 1;
-
+      let permissionLevel = req.body.permissionLevel ;
       // Generate a random password for permission levels 1, 2, or 3
       if ([1, 2, 3].includes(permissionLevel)) {
         const randomPassword = generateRandomPassword();
         console.log(`Generated password for ${req.body.email}: ${randomPassword}`);
         //Placeholder for sending email - to be implemented later
-        sendPasswordEmail(req.body.email, randomPassword);
+        //sendPasswordEmail(req.body.email, randomPassword);
 
         let salt = crypto.randomBytes(16).toString("base64");
         let hash = crypto.createHmac("sha512", salt).update(randomPassword).digest("base64");
@@ -39,7 +37,6 @@ exports.insert = (req, res) => {
         tournamentIds: [req.body.tournamentId] // Add tournamentId to the array
 
       };
-
       UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
           result = result.toJSON();

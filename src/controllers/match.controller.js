@@ -134,6 +134,8 @@ const getAllTeamsInTournament = async (tournamentId) => {
     throw { status: 500, message: 'Internal Server Error' };
   }
 };
+
+
 const createMatch = async ({
   team1,
   team2,
