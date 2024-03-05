@@ -17,12 +17,28 @@ const Tournament = require('../models/tournament');
       throw { status: 404, message: 'Match not found' };
     }
 
-    return match;
+    // Find the teams by their IDs
+    const team1 = await Team.findById(match.team1);
+    const team2 = await Team.findById(match.team2);
+
+    if (!team1 || !team2) {
+      throw { status: 404, message: 'One or more teams not found' };
+    }
+
+    // Add the team names to the match object
+    const matchWithTeamNames = {
+      ...match.toObject(), // Convert Mongoose document to plain object
+      team1Name: team1.name,
+      team2Name: team2.name
+    };
+
+    return matchWithTeamNames;
   } catch (error) {
     console.error('Error getting match by ID:', error);
     throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
   }
 };
+
 const updateMatchDateById = async (matchId, newDate) => {
   try {
     // Find the match by ID and update its date
@@ -118,6 +134,8 @@ const getAllTeamsInTournament = async (tournamentId) => {
     throw { status: 500, message: 'Internal Server Error' };
   }
 };
+
+
 const createMatch = async ({
   team1,
   team2,

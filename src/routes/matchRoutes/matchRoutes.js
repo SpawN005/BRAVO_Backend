@@ -90,6 +90,8 @@ router.get('/:matchId', async (req, res) => {
     res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
   }
 });
+
+
 router.patch('/:matchId/update-date', async (req, res) => {
   try {
     const matchId = req.params.matchId;
