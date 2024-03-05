@@ -378,18 +378,18 @@ const Player = require('../models/players');
       throw new Error('Internal Server Error');
     }
   };
-  const lineupMaking = async (idmatch, idteam, players) => {
+  const lineupMaking = async (matchId, teamId, players) => {
     try {
       // Find the match using matchId and populate team stats
-      const matchStats = await MatchStats.findById(idmatch)
+      const matchStats = await MatchStats.findOne({ match: matchId, team: teamId })
         .populate({
           path: 'redCards yellowCards assisters scorers lineup',
           populate: { path: 'player', model: 'Players' },
         })
-        .exec();
-  
-      console.log(matchStats);
-  
+        .exec(); 
+        console.log(matchStats);
+
+
       if (!matchStats) {
         throw new Error('Match stats not found');
       }
@@ -410,19 +410,14 @@ const Player = require('../models/players');
   const getFormattedLineup = async (matchId, teamId) => {
     try {
       // Find the match stats directly based on matchId and teamId
-      const matchStats = await MatchStats.findOne({ match: matchId, team: teamId })
-        .populate({
-          path: 'redCards yellowCards assisters scorers lineup',
-          populate: { path: 'player', model: 'Players' },
-        })
-        .exec();
+      const matchStats = await MatchStats.findOne({ match: matchId, team: teamId });
   
       if (!matchStats) {
         throw new Error('Match stats not found');
       }
   
-      // Convert ObjectId strings to ObjectId instances
-      const formattedLineup = matchStats.lineup.map((idString) => mongoose.Types.ObjectId(idString));
+      // Extract the player ObjectIds from the lineup field
+      const formattedLineup = matchStats.lineup.map((player) => player._id);
   
       return formattedLineup;
     } catch (error) {

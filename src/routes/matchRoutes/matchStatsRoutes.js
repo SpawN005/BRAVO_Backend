@@ -72,21 +72,21 @@ router.post('/lineup/:matchId', async (req, res) => {
   }
 });
 
-router.get('/lineup/:matchId/:teamId', async (req, res) => {
-  try {
-    const idmatch = req.params.matchId;
-    const idteam = req.params.teamId;
+// router.get('/lineup/:matchId/:teamId', async (req, res) => {
+//   try {
+//     const idmatch = req.params.matchId;
+//     const idteam = req.params.teamId;
 
-    // Call the getLineupForTeam function to retrieve the lineup
-    const lineup = await matchStatController.getFormattedLineup(idmatch, idteam);
+//     // Call the getLineupForTeam function to retrieve the lineup
+//     const lineup = await matchStatController.getFormattedLineup(idmatch, idteam);
 
-    // Send the lineup as a response
-    res.status(200).json(lineup);
-  } catch (error) {
-    console.error('Error getting lineup:', error);
-    res.status(500).json({ message: error.message || 'Internal Server Error' });
-  }
-});
+//     // Send the lineup as a response
+//     res.status(200).json(lineup);
+//   } catch (error) {
+//     console.error('Error getting lineup:', error);
+//     res.status(500).json({ message: error.message || 'Internal Server Error' });
+//   }
+// });
 router.get('/lineup/:matchId/:teamId', async (req, res) => {
   try {
     const idmatch = req.params.matchId;
