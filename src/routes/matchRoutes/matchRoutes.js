@@ -34,7 +34,7 @@ router.get('/teams/:tournamentId', async (req, res) => {
   });
   router.post('/knockout/:tournamentId', async (req, res) => {
     try {
-        const { team1Id, team2Id, date } = req.body;
+        const { team1Id, team2Id, date, referee, observer } = req.body;
         const tournamentId = req.params.tournamentId;
 
         // Ensure that req.body is defined and contains the required properties
@@ -141,6 +141,19 @@ router.post('/update-score', async (req, res) => {
     res.status(200).json({ updatedScore });
   } catch (error) {
     console.error('Error updating score:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const matches = await MatchController.getMatchesByUserId(userId);
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error('Error fetching matches for user:', error);
     res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
   }
 });

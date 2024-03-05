@@ -42,6 +42,15 @@ const matchSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Stadiums",
   },
+
+  observer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Users", // Reference to User model
+  },
+  referee: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Users", // Reference to User model
+  },
 });
 
 module.exports = mongoose.model("Matches", matchSchema);

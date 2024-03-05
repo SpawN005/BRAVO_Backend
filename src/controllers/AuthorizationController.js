@@ -4,7 +4,6 @@ var jwt = require("jsonwebtoken");
 //-------------------------------------------------------------
 // Login
 exports.login = (req, res) => {
-  
   try {
     let refreshId = req.body.userId + "SECRET";
     let salt = crypto.randomBytes(16).toString("base64");

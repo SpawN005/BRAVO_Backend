@@ -144,6 +144,8 @@ const createMatch = async ({
   stage,
   lineup,
   stadium,
+  referee,
+  observer
 }) => {
   try {
     // Check if a value is provided for date and convert it to Date type
@@ -183,6 +185,8 @@ const createMatch = async ({
       stage: stage || null,
       lineup: lineup || [],
       stadium: stadium ? stadium._id : null,
+      referee:referee || null,
+      observer:observer || null
     });
 
     // Assign the match reference to matchStatsTeam1 and matchStatsTeam2
@@ -217,9 +221,9 @@ const createMatch = async ({
 
 const createKnockoutMatch = async (req, res) => {
   try {
-    const { team1Id, team2Id, date } = req.body;
+    const { team1Id, team2Id, date, referee, observer } = req.body;
     const tournamentId = req.params.tournamentId;
-
+    console.log(req.body)
     const team1 = await getTeamById(team1Id);
     const team2 = await getTeamById(team2Id);
     const stage = "Knockout Stage";
@@ -238,7 +242,10 @@ const createKnockoutMatch = async (req, res) => {
       team2,
       tournament: tournamentId,
       date,
-      stage, // Use the provided date string as is
+      stage,
+      referee,
+      observer
+      // Use the provided date string as is
       // Add other properties for the match
     });
 
@@ -332,7 +339,19 @@ const createGroupMatches = async (tournamentId) => {
 
 
 
+
+  const getMatchesByUserId = async (userId) => {
+    try {
+      const matches = await Match.find({
+        $or: [{ referee: userId }, { observer: userId }]
+      }).populate('team1 team2 referee observer'); // Adjust populate as needed
   
+      return matches;
+    } catch (error) {
+      console.error('Error fetching matches by user ID:', error);
+      throw { status: 500, message: 'Internal Server Error' };
+    }
+  };
 
 
 module.exports = {
@@ -345,4 +364,5 @@ module.exports = {
   getAllMatchesForTournament,
   getMatchById,
   updateMatchDateById,
+  getMatchesByUserId
 };
