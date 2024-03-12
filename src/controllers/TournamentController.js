@@ -1,4 +1,6 @@
 var TournamentModel = require("../models/tournament");
+var UsersModel = require("../models/users");
+var TeamModel = require("../models/team");
 
 var TournamentsController = {
   insert: function (req, res) {
@@ -75,15 +77,20 @@ var TournamentsController = {
     const id = req.params.id;
     const updates = req.body;
 
-    TournamentModel.findByIdAndUpdate(id, updates, { new: true }, function(err, updatedTournament) {
+    TournamentModel.findByIdAndUpdate(
+      id,
+      updates,
+      { new: true },
+      function (err, updatedTournament) {
         if (err) {
-            return res.status(500).send({ message: "Error updating tournament" });
+          return res.status(500).send({ message: "Error updating tournament" });
         }
         if (!updatedTournament) {
-            return res.status(404).send({ message: "Tournament not found" });
+          return res.status(404).send({ message: "Tournament not found" });
         }
         res.status(200).send(updatedTournament);
-    });
+      }
+    );
   },
 };
 
