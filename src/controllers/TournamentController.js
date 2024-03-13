@@ -3,12 +3,15 @@ var UsersModel = require("../models/users");
 var TeamModel = require("../models/team");
 
 var TournamentsController = {
-  insert: function (req, res) {
+  insert: async function (req, res) {
     if (!req.body) {
       return res.status(400).send({
         message: "Tournament data can not be empty",
       });
     }
+
+    const teams = await TeamModel.getTeamByManagers(req.body.managerEmails);
+    console.log("Teams:", teams);
 
     const tournamentData = {
       name: req.body.name,
@@ -18,8 +21,24 @@ var TournamentsController = {
       rules: req.body.rules,
       groups: req.body.groups,
       matches: req.body.matches,
-      // Include other fields as per your schema
     };
+    const teamsPerPool = tournamentData.rules.teamsPerPool;
+    console.log("tpp", teamsPerPool);
+    var Tgroups;
+    switch (tournamentData.rules.type) {
+      case "LEAGUE":
+        Tgroups = await TournamentModel.createGroup(teams);
+        break;
+      case "KNOCKOUT":
+        break;
+      case "GROUP_KNOCKOUT":
+        Tgroups = await TournamentModel.createGroups(teams, teamsPerPool);
+        break;
+      default:
+        console.log("Unsupported tournament type");
+    }
+
+    tournamentData.groups = Tgroups;
 
     const newTournament = new TournamentModel(tournamentData);
 

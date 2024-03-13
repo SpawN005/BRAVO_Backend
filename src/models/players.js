@@ -34,5 +34,13 @@ const playersSchema = new mongoose.Schema({
     type: Number,
     // required: true
   },
+  logo:{
+    type:String,
+  },
+  position: {
+    type: String, // Vous pouvez modifier le type selon vos besoins, par exemple, Enum si vous utilisez TypeScript ou un ensemble limité de valeurs.
+    // required: true
+  },
 });
-module.exports = mongoose.model("Players", playersSchema);
+
+module.exports = mongoose.model("Player", playersSchema);

@@ -2,7 +2,7 @@ const express = require("express");
 const MatchController = require("../../controllers/match.controller");
 const router = express.Router();
 const ValidationMiddleware = require("../../middlewares/validation/validation.middleware");
-const { performMatchmaking } = require("../../matchmaking");
+//const { performMatchmaking } = require("../../matchmaking");
 
 /**
  * @swagger
@@ -165,7 +165,7 @@ router.get("/:teamId", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
-
+/** 
 router.post("/groupteams", async (req, res) => {
   const teams = req.body.teams;
   const numGroups = req.body.numGroups || 2; // Default to 2 groups if not provided
@@ -182,5 +182,5 @@ router.post("/groupteams", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
+*/
 module.exports = router;
