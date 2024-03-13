@@ -12,6 +12,9 @@ const tournamentRouter = require('./src/routes/tournamentRoutes/tournament.route
 const swaggerDoc = require("./src/docs/swaggerDoc");
 const stadiumRoutes = require("./src/routes/stadiumRoutes/stadiumRoutes");
 const matchRoutes = require("./src/routes/matchRoutes/matchRoutes");
+const playerRoute = require('./src/routes/playerRoutes/player')
+const teamRoute = require('./src/routes/teamRoutes/teams')
+const path = require('path');
 
 connectDB();
 // ==============================================
@@ -23,13 +26,6 @@ tournamentRouter(app);
 
 swaggerDoc(app);
 //matchmaking(app);
-app.use("/stadiums", stadiumRoutes);
-// app.use("/match", matchRoutes);
-
-app.use("/matches", matchRoutes);
-
-
-
 
 
 // ==============================================
@@ -37,3 +33,16 @@ app.use("/matches", matchRoutes);
 // ==============================================
 app.listen(port);
 console.log("Magic happens on port " + port);
+app.use("/stadiums", stadiumRoutes);
+// app.use("/match", matchRoutes);
+
+app.use("/matches", matchRoutes);
+app.use('/player',playerRoute)
+app.use('/team',teamRoute)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Route pour servir les logos
+app.get('/logo/:filename', (req, res) => {
+  const { filename } = req.params;
+  res.sendFile(path.join(__dirname, 'uploads', filename));
+});

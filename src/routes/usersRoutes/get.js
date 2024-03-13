@@ -33,6 +33,7 @@ const initializeGetRoutes = (app) => {
    *         description: User not found
    */
   app.get("/users/:userId", [UsersController.getById]);
+  
 
   /**
    * @swagger

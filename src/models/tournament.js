@@ -61,6 +61,7 @@ const groupSchema = new mongoose.Schema({
     },
   ],
 });
+const groupModel = mongoose.model("Group", groupSchema);
 
 const tournamentSchema = new mongoose.Schema({
   name: {
@@ -88,5 +89,45 @@ const tournamentSchema = new mongoose.Schema({
     },
   ],
 });
+
+tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
+  if (!teams || teams.length === 0 || !teamsPerPool) {
+    throw new Error("Invalid teams or teamsPerPool provided");
+  }
+
+  const nbGroups = Math.ceil(teams.length / teamsPerPool);
+
+  const groups = [];
+  for (let i = 0; i < nbGroups; i++) {
+    const groupName = `Group ${i + 1}`;
+    const groupTeamSlice = teams.slice(
+      i * teamsPerPool,
+      (i + 1) * teamsPerPool
+    );
+
+    const group = new groupModel({
+      name: groupName,
+      teams: groupTeamSlice.map((team) => team._id),
+    });
+
+    await group.save();
+    groups.push(group);
+  }
+
+  return groups;
+};
+tournamentSchema.statics.createGroup = async function (teams) {
+  const groups = [];
+
+  const group = new groupModel({
+    name: "group 1",
+    teams: teams.map((team) => team._id),
+  });
+
+  await group.save();
+  groups.push(group);
+
+  return groups;
+};
 
 module.exports = mongoose.model("Tournaments", tournamentSchema);
