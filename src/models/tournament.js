@@ -135,5 +135,17 @@ tournamentSchema.statics.createGroup = async function (teams) {
 
   return groups;
 };
+tournamentSchema.statics.findByOwner = async function(ownerId) {
+  try {
+    const tournaments = await this.find({ owner: ownerId }).select("-__v");
+    if (!tournaments || tournaments.length === 0) {
+      throw new Error("Tournaments not found for the owner");
+    }
+    return tournaments;
+  } catch (error) {
+    throw new Error("Error finding tournaments for the owner: " + error.message);
+  }
+};
+
 
 module.exports = mongoose.model("Tournaments", tournamentSchema);

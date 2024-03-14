@@ -7,6 +7,7 @@ const initializeGetRoutes = (app) => {
 
     // GET tournament by ID
     app.get("/tournaments/:id", TournamentsController.getById);
+    app.get("/tournaments/user/:id", TournamentsController.getByIdOwner);
 };
 
 module.exports = initializeGetRoutes;
