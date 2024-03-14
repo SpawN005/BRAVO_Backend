@@ -11,7 +11,21 @@ const teamSchema = new mongoose.Schema({
     type: String,
     //required: true,
   },
-
+  name: {
+    type: String,
+  },
+  country: {
+    type: String,
+  },
+  city: {
+    type: String,
+  },
+  win: {
+    type: Number,
+  },
+  lose: {
+    type: Number,
+  },
   players: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -28,7 +42,7 @@ const teamSchema = new mongoose.Schema({
     // required: true
   },
   logo: {
-    type: String,
+    type: Object,
   },
 });
 

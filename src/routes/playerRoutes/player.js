@@ -9,5 +9,6 @@ router.get('/:id', PlayerController.getPlayerById);
 router.post('/', upload.single('logo'),PlayerController.createPlayer);
 router.delete('/:id', PlayerController.destroy);
 router.put('/:id', PlayerController.updatePlayerById);
+router.post('/assign/:teamId', PlayerController.assignPlayerToTeam);
 
 module.exports = router

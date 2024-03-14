@@ -47,13 +47,42 @@ exports.getAllTeams = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+exports.getTeamsByManagerId = async (req, res) => {
+  const { managerId } = req.params;
+  console.log(managerId);
+  try {
+    // Find teams with the given manager ID
+    const teams = await Team.find({ manager: { $in: managerId } }).populate(
+      "players"
+    );
+
+    if (!teams || teams.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "No teams found for the given manager ID" });
+    }
+
+    res.status(200).json(teams);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 // Ajoutez d'autres méthodes pour récupérer une équipe par son identifiant, mettre à jour une équipe et supprimer une équipe selon vos besoins.
 exports.addTeamAndPlayers = async (req, res) => {
+  console.log(req.body);
   try {
-    const { logo, country, city, name, players } = req.body;
+    const { manager, logo, country, city, name, players } = req.body;
     // 1. Validate input data
-    if (!logo || !name || !city || !country || !players || !players.length) {
+    if (
+      !logo ||
+      !name ||
+      !city ||
+      !country ||
+      !players ||
+      !players.length ||
+      !manager
+    ) {
       return res.status(400).send("Missing required data");
     }
 
@@ -64,7 +93,7 @@ exports.addTeamAndPlayers = async (req, res) => {
     }
 
     // 3. Create the team instance
-    const team = new Team({ name, logo, city, country });
+    const team = new Team({ name, logo, city, country, manager });
     if (req.file) {
       team.logo = req.file.path;
     }

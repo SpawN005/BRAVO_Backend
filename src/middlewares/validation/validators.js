@@ -10,7 +10,6 @@ const validate = async (req, res, next) => {
             goalsScored: yup.number().integer().min(0),
             cleanSheets: yup.number().integer().min(0),
             assist: yup.number().integer().min(0),
-            logo: yup.string(),  
               });
         await schema.validate(req.body,{ abortEarly: false });
         next();
