@@ -1,4 +1,5 @@
 const Players = require('../models/players')
+const Teams = require('../models/team')
 
 
 exports.createPlayer = async (req, res) => {
@@ -58,22 +59,40 @@ exports.destroy = async (req, res) => {
 };
 // Contrôleur pour modifier un joueur par ID
 exports.updatePlayerById = async (req, res) => {
-    const updates = Object.keys(req.body);
-    const allowedUpdates = ['firstName', 'lastName', 'email']; // Les champs autorisés à être mis à jour
-    const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+    const updates = req.body;
 
-    if (!isValidOperation) {
-        return res.status(400).send({ error: 'Invalid updates!' });
-    }
+
+    
 
     try {
-        const player = await Players.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });
+        const player = await Players.findByIdAndUpdate(req.params.id, req.body, );
 
         if (!player) {
             return res.status(404).send();
         }
 
         res.send(player);
+    } catch (error) {
+        res.status(400).send(error);
+    }
+};
+exports.assignPlayerToTeam = async (req, res) => {
+    try {
+        const player = new Players(req.body);
+       
+        await player.save();
+
+        // Mettre à jour l'équipe en associant le joueur à l'équipe
+        const teamId = req.params.teamId; // Supposons que vous envoyez l'ID de l'équipe depuis le frontend
+        const team = await Teams.findById(teamId);
+        if (!team) {
+            return res.status(404).send({ message: 'Team not found' });
+        }
+
+        team.players.push(player._id); // Ajouter l'ID du joueur à la liste des joueurs de l'équipe
+        await team.save();
+
+        res.status(201).send(player);
     } catch (error) {
         res.status(400).send(error);
     }

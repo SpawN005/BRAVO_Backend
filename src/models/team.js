@@ -8,9 +8,19 @@ const teamSchema = new mongoose.Schema({
   },
  name:{
   type: String,
-  //required: true,
 },
-
+country:{
+  type: String,
+},
+  city:{
+  type: String,
+},
+win:{
+  type: Number,
+},
+lose:{
+  type: Number,
+},
   players: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -27,7 +37,7 @@ const teamSchema = new mongoose.Schema({
     // required: true
   },
   logo:{
-    type:String,
+    type:Object,
   },
 });
 module.exports = mongoose.model("Teams", teamSchema);
