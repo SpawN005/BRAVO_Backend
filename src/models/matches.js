@@ -22,7 +22,7 @@ const matchSchema = new mongoose.Schema({
   },
   team1: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Team",
+    ref: "Teams",
     required: true,
   },
   statsTeam1: {
@@ -31,7 +31,7 @@ const matchSchema = new mongoose.Schema({
   },
   team2: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Team",
+    ref: "Teams",
     required: true,
   },
   statsTeam2: {
