@@ -78,6 +78,22 @@ var TournamentsController = {
       res.status(200).send(tournament);
     });
   },
+  getByIdOwner: async function (req, res) {
+    try {
+      const ownerId = req.params.id;
+      const tournaments = await TournamentModel.findByOwner(ownerId);
+  
+      if (!tournaments || tournaments.length === 0) {
+        return res.status(404).send({ message: "Tournaments not found for the owner" });
+      }
+  
+      res.status(200).send(tournaments);
+    } catch (error) {
+      console.error("Error occurred while retrieving tournaments for the owner:", error);
+      res.status(500).send({ message: "Error occurred while retrieving the tournaments" });
+    }
+  }
+,  
 
   removeById: function (req, res) {
     TournamentModel.findByIdAndDelete(
