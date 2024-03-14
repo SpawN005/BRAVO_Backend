@@ -2,6 +2,9 @@ const Tournament = require('../models/tournament');
 
  const Team = require('../models/team');
  const Match = require('../models/matches');
+ const MatchStats = require('../models/matchStats');
+ const Player = require('../models/players');
+ 
 
 
 
@@ -14,12 +17,28 @@ const Tournament = require('../models/tournament');
       throw { status: 404, message: 'Match not found' };
     }
 
-    return match;
+    // Find the teams by their IDs
+    const team1 = await Team.findById(match.team1);
+    const team2 = await Team.findById(match.team2);
+
+    if (!team1 || !team2) {
+      throw { status: 404, message: 'One or more teams not found' };
+    }
+
+    // Add the team names to the match object
+    const matchWithTeamNames = {
+      ...match.toObject(), // Convert Mongoose document to plain object
+      team1Name: team1.name,
+      team2Name: team2.name
+    };
+
+    return matchWithTeamNames;
   } catch (error) {
     console.error('Error getting match by ID:', error);
     throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
   }
 };
+
 const updateMatchDateById = async (matchId, newDate) => {
   try {
     // Find the match by ID and update its date
@@ -115,32 +134,96 @@ const getAllTeamsInTournament = async (tournamentId) => {
     throw { status: 500, message: 'Internal Server Error' };
   }
 };
-const createMatch = async ({ team1, team2, tournament, date, stage }) => {
+
+
+const createMatch = async ({
+  team1,
+  team2,
+  tournament,
+  date,
+  stage,
+  lineup,
+  stadium,
+  referee,
+  observer
+}) => {
   try {
-    // Assuming you have a Match model with 'stage' and 'date' as required fields
-    const newMatch = new Match({
-      team1,
-      team2,
-      tournament,
-      stage, // Replace with the actual stage value
-      date,      // Use the provided date string as is
-      // Add other properties for the match
+    // Check if a value is provided for date and convert it to Date type
+    const matchDate = date ? new Date(date) : null;
+
+    // Create new match stats for each team
+    const matchStatsTeam1 = await MatchStats.create({
+      redCards: [],
+      yellowCards: [],
+      assisters: [],
+      scorers: [],
+      score: null,
     });
 
-    // Save the new match to the database
-    const savedMatch = await newMatch.save();
-    return savedMatch;
+    const matchStatsTeam2 = await MatchStats.create({
+      redCards: [],
+      yellowCards: [],
+      assisters: [],
+      scorers: [],
+      score: null,
+    });
+
+    // Create a new match document with provided values or defaults (null or 0)
+    const newMatch = await Match.create({
+      team1: {
+        _id: team1._id,
+      },
+      statsTeam1: matchStatsTeam1._id, // Use distinct name for team1's stats
+
+      team2: {
+        _id: team2._id,
+      },
+      statsTeam2: matchStatsTeam2._id, // Use distinct name for team2's stats
+
+      tournament: tournament,
+      date: matchDate,
+      stage: stage || null,
+      lineup: lineup || [],
+      stadium: stadium ? stadium._id : null,
+      referee:referee || null,
+      observer:observer || null
+    });
+
+    // Assign the match reference to matchStatsTeam1 and matchStatsTeam2
+    matchStatsTeam1.match = newMatch._id;
+    matchStatsTeam2.match = newMatch._id;
+    matchStatsTeam1.team = newMatch.team1;
+    matchStatsTeam2.team = newMatch.team2;
+
+    // Save the updated match stats with match references
+    await Promise.all([matchStatsTeam1.save(), matchStatsTeam2.save()]);
+
+    // Populate the 'stats' field for team1 and team2
+    const populatedMatch = await Match.findById(newMatch._id)
+      .populate({ path: 'team1.statsTeam1', model: 'MatchStats' })
+      .populate({ path: 'team2.statsTeam2', model: 'MatchStats' })
+      .exec();
+
+    console.log(populatedMatch);
+    return populatedMatch;
   } catch (error) {
-    console.error('Error creating match:', error.message);
-    throw { status: 500, message: 'Internal Server Error' };
+    console.error('Error creating match:', error);
+    throw error;
   }
 };
 
+
+
+
+
+
+
+
 const createKnockoutMatch = async (req, res) => {
   try {
-    const { team1Id, team2Id, date } = req.body;
+    const { team1Id, team2Id, date, referee, observer } = req.body;
     const tournamentId = req.params.tournamentId;
-
+    console.log(req.body)
     const team1 = await getTeamById(team1Id);
     const team2 = await getTeamById(team2Id);
     const stage = "Knockout Stage";
@@ -159,22 +242,25 @@ const createKnockoutMatch = async (req, res) => {
       team2,
       tournament: tournamentId,
       date,
-      stage, // Use the provided date string as is
+      stage,
+      referee,
+      observer
+      // Use the provided date string as is
       // Add other properties for the match
     });
 
     // Log specific properties of newMatch, not the entire object
-    // console.log({
-    //   _id: newMatch._id,
-    //   date: newMatch.date,
-    //   // Add other properties you want to log
-    // });
+    console.log({
+      _id: newMatch._id,
+      date: newMatch.date,
+      // Add other properties you want to log
+    });
 
     res.status(201).json(newMatch);
     return;
   } catch (error) {
     console.error('Error creating knockout match manually:', error);
-    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+    res.status(500).json({ message: 'Internal Server Error' });
   }
 };
 
@@ -247,8 +333,25 @@ const createGroupMatches = async (tournamentId) => {
       throw { status: 500, message: 'Internal Server Error' };
     }
   };
-
   
+
+
+
+
+
+
+  const getMatchesByUserId = async (userId) => {
+    try {
+      const matches = await Match.find({
+        $or: [{ referee: userId }, { observer: userId }]
+      }).populate('team1 team2 referee observer'); // Adjust populate as needed
+  
+      return matches;
+    } catch (error) {
+      console.error('Error fetching matches by user ID:', error);
+      throw { status: 500, message: 'Internal Server Error' };
+    }
+  };
 
 
 module.exports = {
@@ -261,5 +364,5 @@ module.exports = {
   getAllMatchesForTournament,
   getMatchById,
   updateMatchDateById,
-  // Add other match-related functions as needed
+  getMatchesByUserId
 };

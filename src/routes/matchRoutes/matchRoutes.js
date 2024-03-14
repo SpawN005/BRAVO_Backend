@@ -1,7 +1,8 @@
 const express = require("express");
 const MatchController = require("../../controllers/match.controller");
 const router = express.Router();
-const ValidationMiddleware = require("../../middlewares/validation/validation.middleware");
+const ValidationMiddleware = require('../../middlewares/validation/validation.middleware');
+
 //const { performMatchmaking } = require("../../matchmaking");
 
 /**
@@ -28,7 +29,9 @@ const ValidationMiddleware = require("../../middlewares/validation/validation.mi
  *       500:
  *         description: Internal Server Error
  */
-router.get("/tournaments/:tournamentId", async (req, res) => {
+
+
+router.get('/tournaments/:tournamentId', async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
     const tournament = await MatchController.getTournamentById(tournamentId);
@@ -42,41 +45,39 @@ router.get("/tournaments/:tournamentId", async (req, res) => {
     }
   }
 });
-router.get("/tournaments/teams/:tournamentId", async (req, res) => {
-  try {
-    const tournamentId = req.params.tournamentId;
-    const teams = await MatchController.getAllTeamsInTournament(tournamentId);
-
-    res.status(200).json(teams);
-  } catch (error) {
-    if (error.status) {
-      res.status(error.status).json({ message: error.message });
-    } else {
-      res.status(500).json({ message: "Internal Server Error" });
+router.get('/teams/:tournamentId', async (req, res) => {
+    try {
+      const tournamentId = req.params.tournamentId;
+      const teams = await MatchController.getAllTeamsInTournament(tournamentId);
+  
+      res.status(200).json(teams);
+    } catch (error) {
+      if (error.status) {
+        res.status(error.status).json({ message: error.message });
+      } else {
+        res.status(500).json({ message: 'Internal Server Error' });
+      }
     }
-  }
-});
-router.post("/tournaments/:tournamentId/knockout", async (req, res) => {
-  try {
-    const { team1Id, team2Id, date } = req.body;
-    const tournamentId = req.params.tournamentId;
+  });
+  router.post('/knockout/:tournamentId', async (req, res) => {
+    try {
+        const { team1Id, team2Id, date, referee, observer } = req.body;
+        const tournamentId = req.params.tournamentId;
 
-    // Ensure that req.body is defined and contains the required properties
-    if (!team1Id || !team2Id || !date) {
-      return res.status(400).json({ message: "Invalid request body" });
+        // Ensure that req.body is defined and contains the required properties
+        if (!team1Id || !team2Id || !date) {
+            return res.status(400).json({ message: 'Invalid request body' });
+        }
+
+        const match = await MatchController.createKnockoutMatch(req, res); // Pass req and res to the controller
+
+        res.status(201).json(match);
+    } catch (error) {
+        console.error('Error creating knockout match manually:', error);
+        res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
     }
-
-    const match = await MatchController.createKnockoutMatch(req, res); // Pass req and res to the controller
-
-    res.status(201).json(match);
-  } catch (error) {
-    console.error("Error creating knockout match manually:", error);
-    res
-      .status(error.status || 500)
-      .json({ message: error.message || "Internal Server Error" });
-  }
 });
-router.post("/tournaments/:tournamentId/group-matches", async (req, res) => {
+router.post('/group-matches/:tournamentId', async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
 
@@ -91,7 +92,7 @@ router.post("/tournaments/:tournamentId/group-matches", async (req, res) => {
   }
 });
 
-router.get("/tournaments/:tournamentId/matches", async (req, res) => {
+router.get('/matches/:tournamentId', async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
 
@@ -124,7 +125,8 @@ router.get("/:matchId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
-router.patch("/:matchId/update-date", async (req, res) => {
+
+router.patch('update-date/:matchId', async (req, res) => {
   try {
     const matchId = req.params.matchId;
     const newDate = req.body.date; // Assuming the new date is provided in the request body
@@ -173,6 +175,34 @@ router.post("/groupteams", async (req, res) => {
   if (!teams || !Array.isArray(teams) || teams.length === 0) {
     return res.status(400).json({ error: "No teams provided" });
   }
+router.post('/update-score', async (req, res) => {
+  try {
+    // Add logic to update the score
+    const updatedScore = await MatchController.updateScore(req.body);
+
+    // Emit an event to notify clients about the updated score
+    io.emit('scoreUpdated', { updatedScore });
+
+    // Respond with the updated score
+    res.status(200).json({ updatedScore });
+  } catch (error) {
+    console.error('Error updating score:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const userId = req.params.userId;
+
+    const matches = await MatchController.getMatchesByUserId(userId);
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error('Error fetching matches for user:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
 
   try {
     const matchedTeams = await performMatchmaking(teams, numGroups);
