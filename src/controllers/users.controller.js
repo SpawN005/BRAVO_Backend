@@ -1,6 +1,6 @@
 var UserModel = require("../models/users");
 var crypto = require("crypto");
-const { generateRandomPassword } = require('../utils/passwordUtils'); // Adjust the path as needed
+const { generateRandomPassword } = require("../utils/passwordUtils"); // Adjust the path as needed
 
 //-------------------------------------------------------------
 // Inserting
@@ -14,28 +14,35 @@ exports.insert = (req, res) => {
       });
     })
     .catch(() => {
-      let permissionLevel = req.body.permissionLevel ;
+      let permissionLevel = req.body.permissionLevel;
       // Generate a random password for permission levels 1, 2, or 3
       if ([1, 2, 3].includes(permissionLevel)) {
         const randomPassword = generateRandomPassword();
-        console.log(`Generated password for ${req.body.email}: ${randomPassword}`);
+        console.log(
+          `Generated password for ${req.body.email}: ${randomPassword}`
+        );
         //Placeholder for sending email - to be implemented later
         //sendPasswordEmail(req.body.email, randomPassword);
 
         let salt = crypto.randomBytes(16).toString("base64");
-        let hash = crypto.createHmac("sha512", salt).update(randomPassword).digest("base64");
+        let hash = crypto
+          .createHmac("sha512", salt)
+          .update(randomPassword)
+          .digest("base64");
         req.body.password = salt + "$" + hash;
       } else {
         let salt = crypto.randomBytes(16).toString("base64");
-        let hash = crypto.createHmac("sha512", salt).update(req.body.password).digest("base64");
+        let hash = crypto
+          .createHmac("sha512", salt)
+          .update(req.body.password)
+          .digest("base64");
         req.body.password = salt + "$" + hash;
       }
 
       let newUser = {
         userIdentity: req.body,
         permissionLevel: permissionLevel,
-        tournamentIds: [req.body.tournamentId] // Add tournamentId to the array
-
+        tournamentIds: [req.body.tournamentId], // Add tournamentId to the array
       };
       UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
@@ -88,7 +95,7 @@ exports.patchById = (req, res) => {
       .digest("base64");
     req.body.password = salt + "$" + hash;
   }
-  console.log(req.body )
+  console.log(req.body);
   UserModel.patchUser(req.params.userId, req.body)
     .then((result) => {
       res.status(200).send({
@@ -128,7 +135,7 @@ exports.list = (req, res) => {
 //-------------------------------------------------------------
 // Deleting by Id
 exports.removeById = (req, res) => {
-  console.log(req.body)
+  console.log(req.body);
   UserModel.removeById(req.params.userId)
     .then((result) => {
       res.status(204).send({
@@ -145,90 +152,90 @@ exports.removeById = (req, res) => {
     );
 };
 
-
 exports.getObserversByTournamentId = (req, res) => {
   // Assuming 'tournamentsId' is the field in the UserModel that stores tournament IDs
-  UserModel.findByTournamentId( req.params.tournamentId )
-      .then((users) => {
-        const observers = users.filter(user => user.permissionLevel === 1);
+  console.log(req.params.tournamentId);
 
-          if (observers.length > 0) {
-              res.status(200).send({
-                  code: 200,
-                  status: "success",
-                  data: observers,
-              });
-          } else {
-              res.status(404).send({
-                  code: 404,
-                  status: "not found",
-                  message: "No observers found for the given tournament ID",
-              });
-          }
+  UserModel.findByTournamentId(req.params.tournamentId)
+    .then((users) => {
+      const observers = users.filter((user) => user.permissionLevel === 1);
+
+      if (observers.length > 0) {
+        res.status(200).send({
+          code: 200,
+          status: "success",
+          data: observers,
+        });
+      } else {
+        res.status(404).send({
+          code: 404,
+          status: "not found",
+          message: "No observers found for the given tournament ID",
+        });
+      }
+    })
+    .catch((error) =>
+      res.status(500).send({
+        code: 500,
+        status: "error",
+        message: "An error occurred while fetching observers",
+        error: error,
       })
-      .catch((error) => 
-          res.status(500).send({
-              code: 500,
-              status: "error",
-              message: "An error occurred while fetching observers",
-              error: error
-          })
-      );
+    );
 };
 
 exports.getRefereesByTournamentId = (req, res) => {
   UserModel.findByTournamentId(req.params.tournamentId)
     .then((users) => {
-        // Filter users by permissionLevel
-        const referees = users.filter(user => user.permissionLevel === 3);
-        console.log(referees)
-        if (referees.length > 0) {
-            res.status(200).send({
-                code: 200,
-                status: "success",
-                data: referees,
-            });
-        } else {
-            res.status(404).send({
-                code: 404,
-                status: "not found",
-                message: "No referees found for the given tournament ID",
-            });
-        }
+      // Filter users by permissionLevel
+      const referees = users.filter((user) => user.permissionLevel === 3);
+      console.log(referees);
+      if (referees.length > 0) {
+        res.status(200).send({
+          code: 200,
+          status: "success",
+          data: referees,
+        });
+      } else {
+        res.status(404).send({
+          code: 404,
+          status: "not found",
+          message: "No referees found for the given tournament ID",
+        });
+      }
     })
-    .catch((error) => 
-        res.status(500).send({
-            code: 500,
-            status: "error",
-            message: "An error occurred while fetching referees",
-            error: error
-        })
+    .catch((error) =>
+      res.status(500).send({
+        code: 500,
+        status: "error",
+        message: "An error occurred while fetching referees",
+        error: error,
+      })
     );
 };
-
 
 const sendPasswordEmail = async (email, password) => {
   let transporter = nodemailer.createTransport({
     // Configure the transporter with your email service details
-    service: 'your_email_service', // e.g., 'gmail'
+    service: "your_email_service", // e.g., 'gmail'
     auth: {
-      user: 'your_email_address',
-      pass: 'your_email_password'
-    }
+      user: "your_email_address",
+      pass: "your_email_password",
+    },
   });
 
   let mailOptions = {
-    from: 'your_email_address',
+    from: "your_email_address",
     to: email,
-    subject: 'Your New Password',
-    text: `Your new password is: ${password}`
+    subject: "Your New Password",
+    text: `Your new password is: ${password}`,
     // You can also use HTML body content
   };
 
   try {
     let info = await transporter.sendMail(mailOptions);
-    console.log('Email sent:', info.response);
+    console.log("Email sent:", info.response);
   } catch (error) {
-    console.error('Error sending email:', error);
+    console.error("Error sending email:", error);
   }
 };

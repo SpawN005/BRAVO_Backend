@@ -51,10 +51,9 @@ exports.getAllTeams = async (req, res) => {
 // Ajoutez d'autres méthodes pour récupérer une équipe par son identifiant, mettre à jour une équipe et supprimer une équipe selon vos besoins.
 exports.addTeamAndPlayers = async (req, res) => {
   try {
-    const { logo, name, players } = req.body;
-
+    const { logo, country, city, name, players } = req.body;
     // 1. Validate input data
-    if (!logo || !name || !players || !players.length) {
+    if (!logo || !name || !city || !country || !players || !players.length) {
       return res.status(400).send("Missing required data");
     }
 
@@ -65,7 +64,7 @@ exports.addTeamAndPlayers = async (req, res) => {
     }
 
     // 3. Create the team instance
-    const team = new Team({ name, logo });
+    const team = new Team({ name, logo, city, country });
     if (req.file) {
       team.logo = req.file.path;
     }

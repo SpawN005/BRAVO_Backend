@@ -66,10 +66,12 @@ const userSchema = mongoose.Schema({
   userAdress: {
     type: userAdressSchema,
   },
-  tournamentIds: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Tournaments' // Replace with your Tournament collection name if different
-  }],
+  tournamentIds: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tournaments", // Replace with your Tournament collection name if different
+    },
+  ],
 });
 
 const User = mongoose.model("Users", userSchema);
@@ -118,12 +120,16 @@ exports.findByEmails = (emails) => {
 //-------------------------------------------------------
 
 exports.findByTournamentId = (tournamentId) => {
+  console.log(tournamentId);
   return new Promise((resolve, reject) => {
-    User.find({ "tournamentIds": mongoose.Types.ObjectId(tournamentId) })
+    User.find({ tournamentIds: mongoose.Types.ObjectId(tournamentId) })
       .select("-__v")
       .exec(function (err, users) {
         if (err || users.length === 0) {
-          reject(err || new Error("No users found with the given tournament ID"));
+          console.log(err);
+          reject(
+            err || new Error("No users found with the given tournament ID")
+          );
         } else {
           resolve(users);
         }
