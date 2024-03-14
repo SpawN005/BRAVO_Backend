@@ -5,9 +5,7 @@ const Tournament = require("../models/tournament.js");
 
 beforeAll(() => {});
 
-afterAll(() => {
-  process.exit();
-});
+afterAll(() => {});
 
 describe("GET /tournaments", () => {
   it("should get all tournaments successfully", async () => {
