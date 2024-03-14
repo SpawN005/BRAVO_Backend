@@ -43,6 +43,7 @@ io.on("connection", (socket) => {
 // START THE SERVER
 // ==============================================
 app.listen(port);
+
 console.log("Magic happens on port " + port);
 app.use("/stadiums", stadiumRoutes);
 // app.use("/match", matchRoutes);
