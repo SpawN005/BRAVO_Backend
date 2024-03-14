@@ -3,10 +3,6 @@ const supertest = require("supertest");
 const request = supertest(app);
 const Tournament = require("../models/tournament.js");
 
-beforeAll(() => {});
-
-afterAll(() => {});
-
 describe("GET /tournaments", () => {
   it("should get all tournaments successfully", async () => {
     const response = await request.get("/tournaments");
