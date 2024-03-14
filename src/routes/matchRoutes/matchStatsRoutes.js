@@ -65,7 +65,6 @@ router.post('/lineup/:matchId', async (req, res) => {
   try {
     const idmatch = req.params.matchId;
     const { idteam, players } = req.body;
-
     const result = await matchStatController.lineupMaking(idmatch, idteam, players);
 
     res.json(result);

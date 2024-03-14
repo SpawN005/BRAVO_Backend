@@ -194,7 +194,6 @@ router.post('/update-score', async (req, res) => {
 router.get('/user/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
-
     const matches = await MatchController.getMatchesByUserId(userId);
 
     res.status(200).json(matches);
