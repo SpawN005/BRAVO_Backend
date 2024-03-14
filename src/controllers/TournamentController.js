@@ -15,6 +15,7 @@ var TournamentsController = {
 
     const tournamentData = {
       name: req.body.name,
+      owner:req.body.owner,
       startDate: req.body.startDate,
       endDate: req.body.endDate,
       location: req.body.location,

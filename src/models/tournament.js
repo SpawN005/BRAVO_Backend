@@ -1,4 +1,6 @@
 const mongoose = require("mongoose");
+const User = require("./users.js");
+
 const type = ["LEAGUE", "KNOCKOUT", "GROUP_KNOCKOUT"];
 const breakingRules = ["NOP", "GD", "GS", "HTH", "MW", "CG"];
 
@@ -67,6 +69,10 @@ const tournamentSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
+  },
+  owner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
   },
   startDate: {
     type: Date,
