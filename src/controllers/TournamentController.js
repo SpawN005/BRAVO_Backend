@@ -9,7 +9,7 @@ var TournamentsController = {
         message: "Tournament data can not be empty",
       });
     }
-
+    console.log(req.body.managerEmails);
     const teams = await TeamModel.getTeamByManagers(req.body.managerEmails);
     console.log("Teams:", teams);
 
