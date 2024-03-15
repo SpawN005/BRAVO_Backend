@@ -344,7 +344,19 @@ const createGroupMatches = async (tournamentId) => {
     try {
       const matches = await Match.find({
         $or: [{ referee: userId }, { observer: userId }]
-      }).populate('team1 team2 referee observer'); // Adjust populate as needed
+      }).populate({
+        path: 'team1',
+        select: 'name score' // include only 'name' and 'score' fields
+      }).populate({
+        path: 'team2',
+        select: 'name score' // include only 'name' and 'score' fields
+      }).populate({
+        path: 'referee',
+        select: '-userIdentity.password -userIdentity.email' // exclude 'password' and 'email' fields
+      }).populate({
+        path: 'observer',
+        select: '-userIdentity.password -userIdentity.email' // exclude 'password' and 'email' fields
+      });
   
       return matches;
     } catch (error) {
@@ -352,6 +364,7 @@ const createGroupMatches = async (tournamentId) => {
       throw { status: 500, message: 'Internal Server Error' };
     }
   };
+  
 
 
 module.exports = {

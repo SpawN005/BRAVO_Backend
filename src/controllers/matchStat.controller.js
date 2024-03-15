@@ -378,10 +378,11 @@ const Player = require('../models/players');
       throw new Error('Internal Server Error');
     }
   };
-  const lineupMaking = async (matchId, teamId, players) => {
+  const lineupMaking = async (matchId, idTeam, players) => {
     try {
+      console.log(matchId, idTeam,players )
       // Find the match using matchId and populate team stats
-      const matchStats = await MatchStats.findOne({ match: matchId, team: teamId })
+      const matchStats = await MatchStats.findOne({ match: matchId, team: idTeam })
         .populate({
           path: 'redCards yellowCards assisters scorers lineup',
           populate: { path: 'player', model: 'Players' },
@@ -409,19 +410,33 @@ const Player = require('../models/players');
   
   const getFormattedLineup = async (matchId, teamId) => {
     try {
-      // Find the match stats directly based on matchId and teamId
       const matchStats = await MatchStats.findOne({ match: matchId, team: teamId });
   
       if (!matchStats) {
         throw new Error('Match stats not found');
       }
   
-      // Extract the player ObjectIds from the lineup field
-      const formattedLineup = matchStats.lineup.map((player) => player._id);
+      // Populate player details for each ID in the lineup
+      const populatedLineup = await Promise.all(
+        matchStats.lineup.map(async (playerId) => {
+          const player = await Player.findById(playerId);
+          if (player) {
+            return {
+              _id: player._id,
+              firstName: player.firstName,
+              lastName: player.lastName,
+              // Include other fields from the playerSchema as required
+            };
+          } else {
+            // Handle the case where the player is not found
+            return { message: `Player with ID ${playerId} not found` };
+          }
+        })
+      );
   
-      return formattedLineup;
+      return populatedLineup.filter(player => player != null);
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching lineup:', error);
       throw new Error('Internal Server Error');
     }
   };

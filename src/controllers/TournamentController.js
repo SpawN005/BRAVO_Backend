@@ -9,9 +9,12 @@ var TournamentsController = {
         message: "Tournament data can not be empty",
       });
     }
+
+    
     console.log(req.body.managerEmails);
     const teams = await TeamModel.getTeamByManagers(req.body.managerEmails);
     console.log("Teams:", teams);
+    
 
     const tournamentData = {
       name: req.body.name,
@@ -23,7 +26,8 @@ var TournamentsController = {
       groups: req.body.groups,
       matches: req.body.matches,
     };
-    const teamsPerPool = tournamentData.rules.teamsPerPool;
+
+    const teamsPerPool = tournamentData.rules.teamsPerPool;   
     console.log("tpp", teamsPerPool);
     var Tgroups;
     switch (tournamentData.rules.type) {
@@ -40,9 +44,7 @@ var TournamentsController = {
     }
 
     tournamentData.groups = Tgroups;
-
     const newTournament = new TournamentModel(tournamentData);
-
     newTournament.save(function (err, tournament) {
       if (err) {
         return res.status(500).send({
