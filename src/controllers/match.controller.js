@@ -377,5 +377,10 @@ module.exports = {
   getAllMatchesForTournament,
   getMatchById,
   updateMatchDateById,
+<<<<<<< Updated upstream
   getMatchesByUserId
 };
+=======
+  getMatchesByUserId,
+};
+>>>>>>> Stashed changes
