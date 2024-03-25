@@ -267,50 +267,56 @@ const createKnockoutMatch = async (req, res) => {
 const createGroupMatches = async (tournamentId) => {
   try {
     const tournament = await Tournament.findById(tournamentId);
-
     if (!tournament) {
       throw { status: 404, message: 'Tournament not found' };
     }
-
     const matches = [];
-
-    if (tournament.rules?.type === 'LEAGUE' || tournament.rules?.type === 'GROUP_KNOCKOUT') {
-      tournament.groups.forEach(async (group) => { // Use async here
+    if (tournament.rules?.type === 'GROUP_KNOCKOUT') {
+      for (const group of tournament.groups) {
         const groupTeams = group.teams;
-
         for (let i = 0; i < groupTeams.length; i++) {
           for (let j = i + 1; j < groupTeams.length; j++) {
             const team1 = groupTeams[i];
             const team2 = groupTeams[j];
-
-            const newMatch = new Match({
+            const newMatch = await createMatch({
               team1,
               team2,
               tournament: tournament._id,
-              stage: 'GROUP_STAGE', // Replace with the appropriate stage value
-              date: null, // Set the date property to null
+              stage: 'GROUP_STAGE',
+              date: null,
               // Add other properties for the match
             });
 
-            // Save the new match to the database
-            const savedMatch = await newMatch.save();
-
-            matches.push(savedMatch);
           }
         }
-      });
+      }
+    } else if (tournament.rules?.type === 'LEAGUE') {
+      const teams = tournament.groups.flatMap(group => group.teams);
+      for (let i = 0; i < teams.length; i++) {
+        for (let j = i + 1; j < teams.length; j++) {
+          const team1 = teams[i];
+          const team2 = teams[j];
+          const newMatch = await createMatch({team1, team2, tournament: tournament._id, stage: 'LEAGUE', date: null });
+          const newMatch2 = await createMatch({ team1: team2, team2: team1, tournament: tournament._id, stage: 'LEAGUE', date: null });
+
+
+          // const match1 = new Match({ team1, team2, tournament: tournament._id, stage: 'LEAGUE', date: null });
+          // const match2 = new Match({ team1: team2, team2: team1, tournament: tournament._id, stage: 'LEAGUE', date: null });
+
+
+
+
+        }
+      }
     } else {
       throw { status: 400, message: 'Invalid tournament type for creating group matches' };
     }
-
     return matches;
   } catch (error) {
     console.error('Error creating group matches:', error.message);
     throw { status: 500, message: 'Internal Server Error' };
   }
 };
-
-
 
 
    const getTeamById = async (teamId) => {
@@ -364,6 +370,104 @@ const createGroupMatches = async (tournamentId) => {
       throw { status: 500, message: 'Internal Server Error' };
     }
   };
+
+  const createRandomMatch = async (req, res) => {
+    try {
+      const { tournamentId } = req.params;
+  
+      // Retrieve the tournament from the provided tournamentId
+      const tournament = await Tournament.findById(tournamentId);
+      if (!tournament) {
+        return res.status(404).json({ message: 'Tournament not found' });
+      }
+  
+      // Randomly select two teams from the tournament
+      const teams = tournament.groups.flatMap(group => group.teams);
+      const team1Index = Math.floor(Math.random() * teams.length);
+      let team2Index = Math.floor(Math.random() * teams.length);
+      // Ensure team2 is different from team1
+      while (team2Index === team1Index) {
+        team2Index = Math.floor(Math.random() * teams.length);
+      }
+      const team1 = teams[team1Index];
+      const team2 = teams[team2Index];
+  
+      // Generate other random match properties
+      const stage = "Knockout Stage";
+  
+      // Create the match
+      const newMatch = await createMatch({
+        team1,
+        team2,
+        tournament: tournamentId,
+        stage,
+
+        // Add other properties for the match
+      });
+  
+      // Log specific properties of newMatch, not the entire object
+
+  
+      res.status(201).json(newMatch);
+      return;
+    } catch (error) {
+      console.error('Error creating random match:', error);
+      res.status(500).json({ message: 'Internal Server Error' });
+    }
+  };
+  // Assuming you have defined the necessary imports and dependencies
+
+  const createRandomKnockoutMatchesForTournament = async (tournamentId) => {
+    try {
+      const tournament = await Tournament.findById(tournamentId);
+      if (!tournament) {
+        throw { status: 404, message: 'Tournament not found' };
+      }
+  
+      const teams = tournament.groups.flatMap(group => group.teams);
+      const matches = [];
+  
+      // Create a copy of the teams array to track which teams have been matched
+      const remainingTeams = [...teams];
+  
+      // Loop until all teams have played a match
+      while (remainingTeams.length > 1) {
+        // Randomly select two teams
+        const team1Index = Math.floor(Math.random() * remainingTeams.length);
+        let team2Index = Math.floor(Math.random() * remainingTeams.length);
+        while (team2Index === team1Index) {
+          team2Index = Math.floor(Math.random() * remainingTeams.length);
+        }
+  
+        // Remove the selected teams from the remaining teams array
+        const team1 = remainingTeams.splice(team1Index, 1)[0];
+        const team2 = remainingTeams.splice(team2Index - (team2Index > team1Index ? 1 : 0), 1)[0];
+  
+        const stage = "Knockout Stage";
+  
+        // Create the match
+        const newMatch = await createMatch({
+          team1,
+          team2,
+          tournament: tournamentId,
+          stage,
+          
+          // Add other properties for the match
+        });
+  
+        matches.push(newMatch);
+      }
+  
+      return matches;
+    } catch (error) {
+      console.error('Error creating random knockout matches for tournament:', error);
+      throw { status: 500, message: 'Internal Server Error' };
+    }
+  };
+  
+
+
+  
   
 
 
@@ -377,10 +481,7 @@ module.exports = {
   getAllMatchesForTournament,
   getMatchById,
   updateMatchDateById,
-<<<<<<< Updated upstream
-  getMatchesByUserId
-};
-=======
   getMatchesByUserId,
+  createRandomMatch,
+  createRandomKnockoutMatchesForTournament,
 };
->>>>>>> Stashed changes

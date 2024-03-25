@@ -63,6 +63,38 @@ router.post('/group-matches/:tournamentId', async (req, res) => {
   }
 });
 
+// one random match 
+router.post('/random-match/:tournamentId', async (req, res) => {
+  try {
+    const tournamentId = req.params.tournamentId;
+
+    const newMatch = await MatchController.createRandomMatch(req, res, tournamentId);
+
+    res.status(201).json(newMatch);
+  } catch (error) {
+    console.error('Error creating random match:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
+//random match for all tournamants
+
+router.post('/random-matches/:tournamentId', async (req, res) => {
+  try {
+    const tournamentId = req.params.tournamentId;
+
+    const matches = await MatchController.createRandomKnockoutMatchesForTournament(tournamentId);
+
+    res.status(201).json(matches);
+  } catch (error) {
+    console.error('Error creating random matches for tournament:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
+
+
+
 router.get('/matches/:tournamentId', async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
