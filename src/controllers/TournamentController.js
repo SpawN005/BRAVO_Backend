@@ -10,15 +10,13 @@ var TournamentsController = {
       });
     }
 
-    
-    console.log(req.body.managerEmails);
-    const teams = await TeamModel.getTeamByManagers(req.body.managerEmails);
-    console.log("Teams:", teams);
-    
-
+    // console.log(req.body.managerEmails);
+    // const teams = await TeamModel.getTeamByManagers(req.body.managerEmails);
+    // console.log("Teams:", teams);
+    console.log(req.body);
     const tournamentData = {
       name: req.body.name,
-      owner:req.body.owner,
+      owner: req.body.owner,
       startDate: req.body.startDate,
       endDate: req.body.endDate,
       location: req.body.location,
@@ -27,17 +25,20 @@ var TournamentsController = {
       matches: req.body.matches,
     };
 
-    const teamsPerPool = tournamentData.rules.teamsPerPool;   
+    const teamsPerPool = tournamentData.rules.teamsPerPool;
     console.log("tpp", teamsPerPool);
     var Tgroups;
     switch (tournamentData.rules.type) {
       case "LEAGUE":
-        Tgroups = await TournamentModel.createGroup(teams);
+        Tgroups = await TournamentModel.createGroup(req.body.teams);
         break;
       case "KNOCKOUT":
         break;
       case "GROUP_KNOCKOUT":
-        Tgroups = await TournamentModel.createGroups(teams, teamsPerPool);
+        Tgroups = await TournamentModel.createGroups(
+          req.body.teams,
+          teamsPerPool
+        );
         break;
       default:
         console.log("Unsupported tournament type");
@@ -84,19 +85,24 @@ var TournamentsController = {
     try {
       const ownerId = req.params.id;
       const tournaments = await TournamentModel.findByOwner(ownerId);
-  
+
       if (!tournaments || tournaments.length === 0) {
-        return res.status(404).send({ message: "Tournaments not found for the owner" });
+        return res
+          .status(404)
+          .send({ message: "Tournaments not found for the owner" });
       }
-  
+
       res.status(200).send(tournaments);
     } catch (error) {
-      console.error("Error occurred while retrieving tournaments for the owner:", error);
-      res.status(500).send({ message: "Error occurred while retrieving the tournaments" });
+      console.error(
+        "Error occurred while retrieving tournaments for the owner:",
+        error
+      );
+      res
+        .status(500)
+        .send({ message: "Error occurred while retrieving the tournaments" });
     }
-  }
-,  
-
+  },
   removeById: function (req, res) {
     TournamentModel.findByIdAndDelete(
       req.params.id,
