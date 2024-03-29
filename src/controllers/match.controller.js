@@ -1,20 +1,17 @@
-const Tournament = require('../models/tournament');
+const Tournament = require("../models/tournament");
 
- const Team = require('../models/team');
- const Match = require('../models/matches');
- const MatchStats = require('../models/matchStats');
- const Player = require('../models/players');
- 
+const Team = require("../models/team");
+const Match = require("../models/matches");
+const MatchStats = require("../models/matchStats");
+const Player = require("../models/players");
 
-
-
- const getMatchById = async (matchId) => {
+const getMatchById = async (matchId) => {
   try {
     // Find the match by ID
     const match = await Match.findById(matchId);
 
     if (!match) {
-      throw { status: 404, message: 'Match not found' };
+      throw { status: 404, message: "Match not found" };
     }
 
     // Find the teams by their IDs
@@ -22,56 +19,63 @@ const Tournament = require('../models/tournament');
     const team2 = await Team.findById(match.team2);
 
     if (!team1 || !team2) {
-      throw { status: 404, message: 'One or more teams not found' };
+      throw { status: 404, message: "One or more teams not found" };
     }
 
     // Add the team names to the match object
     const matchWithTeamNames = {
       ...match.toObject(), // Convert Mongoose document to plain object
       team1Name: team1.name,
-      team2Name: team2.name
+      team2Name: team2.name,
     };
 
     return matchWithTeamNames;
   } catch (error) {
-    console.error('Error getting match by ID:', error);
-    throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
+    console.error("Error getting match by ID:", error);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
   }
 };
 
 const updateMatchDateById = async (matchId, newDate) => {
   try {
     // Find the match by ID and update its date
-    const updatedMatch = await Match.findByIdAndUpdate(matchId, { date: newDate }, { new: true });
+    const updatedMatch = await Match.findByIdAndUpdate(
+      matchId,
+      { date: newDate },
+      { new: true }
+    );
 
     if (!updatedMatch) {
-      throw { status: 404, message: 'Match not found' };
+      throw { status: 404, message: "Match not found" };
     }
 
     return updatedMatch;
   } catch (error) {
-    console.error('Error updating match date by ID:', error);
-    throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
+    console.error("Error updating match date by ID:", error);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
   }
 };
-
 
 const getTournamentById = async (tournamentId) => {
   try {
     const tournament = await Tournament.findById(tournamentId);
 
     if (!tournament) {
-      throw { status: 404, message: 'Tournament not found' };
+      throw { status: 404, message: "Tournament not found" };
     }
     console.log(tournament);
     return tournament;
   } catch (error) {
-    console.error('Error getting tournament by ID:', error.message);
-    throw { status: 500, message: 'Internal Server Error' };
+    console.error("Error getting tournament by ID:", error.message);
+    throw { status: 500, message: "Internal Server Error" };
   }
 };
-
-
 
 const getTeamsInTournament = async (tournamentId) => {
   try {
@@ -88,8 +92,8 @@ const getTeamsInTournament = async (tournamentId) => {
 
     return teams;
   } catch (error) {
-    console.error('Error getting teams in tournament:', error.message);
-    throw { status: 500, message: 'Internal Server Error' };
+    console.error("Error getting teams in tournament:", error.message);
+    throw { status: 500, message: "Internal Server Error" };
   }
 };
 
@@ -98,17 +102,17 @@ const getAllTeamsInTournament = async (tournamentId) => {
     const tournament = await Tournament.findById(tournamentId);
 
     if (!tournament) {
-      throw { status: 404, message: 'Tournament not found' };
+      throw { status: 404, message: "Tournament not found" };
     }
 
-    console.log('Tournament:', tournament); // Log the entire tournament object
+    console.log("Tournament:", tournament); // Log the entire tournament object
 
     const teams = [];
 
     // Check the type of the tournament
     switch (tournament.rules?.type) {
-      case 'LEAGUE':
-      case 'GROUP_KNOCKOUT':
+      case "LEAGUE":
+      case "GROUP_KNOCKOUT":
         // Iterate through groups and teams
         tournament.groups.forEach((group) => {
           group.teams.forEach((team) => {
@@ -117,7 +121,7 @@ const getAllTeamsInTournament = async (tournamentId) => {
         });
         break;
 
-      case 'KNOCKOUT':
+      case "KNOCKOUT":
         // For knockout, teams are directly in the main group
         tournament.groups[0]?.teams.forEach((team) => {
           teams.push({ teamId: team, groupName: tournament.groups[0]?.name });
@@ -125,16 +129,15 @@ const getAllTeamsInTournament = async (tournamentId) => {
         break;
 
       default:
-        throw { status: 500, message: 'Unsupported tournament type' };
+        throw { status: 500, message: "Unsupported tournament type" };
     }
 
     return teams;
   } catch (error) {
-    console.error('Error getting teams in tournament:', error.message);
-    throw { status: 500, message: 'Internal Server Error' };
+    console.error("Error getting teams in tournament:", error.message);
+    throw { status: 500, message: "Internal Server Error" };
   }
 };
-
 
 const createMatch = async ({
   team1,
@@ -145,7 +148,7 @@ const createMatch = async ({
   lineup,
   stadium,
   referee,
-  observer
+  observer,
 }) => {
   try {
     // Check if a value is provided for date and convert it to Date type
@@ -185,8 +188,8 @@ const createMatch = async ({
       stage: stage || null,
       lineup: lineup || [],
       stadium: stadium ? stadium._id : null,
-      referee:referee || null,
-      observer:observer || null
+      referee: referee || null,
+      observer: observer || null,
     });
 
     // Assign the match reference to matchStatsTeam1 and matchStatsTeam2
@@ -200,41 +203,34 @@ const createMatch = async ({
 
     // Populate the 'stats' field for team1 and team2
     const populatedMatch = await Match.findById(newMatch._id)
-      .populate({ path: 'team1.statsTeam1', model: 'MatchStats' })
-      .populate({ path: 'team2.statsTeam2', model: 'MatchStats' })
+      .populate({ path: "team1.statsTeam1", model: "MatchStats" })
+      .populate({ path: "team2.statsTeam2", model: "MatchStats" })
       .exec();
 
     console.log(populatedMatch);
     return populatedMatch;
   } catch (error) {
-    console.error('Error creating match:', error);
+    console.error("Error creating match:", error);
     throw error;
   }
 };
-
-
-
-
-
-
-
 
 const createKnockoutMatch = async (req, res) => {
   try {
     const { team1Id, team2Id, date, referee, observer } = req.body;
     const tournamentId = req.params.tournamentId;
-    console.log(req.body)
+    console.log(req.body);
     const team1 = await getTeamById(team1Id);
     const team2 = await getTeamById(team2Id);
     const stage = "Knockout Stage";
 
     if (!team1 || !team2) {
-      return res.status(404).json({ message: 'One or both teams not found' });
+      return res.status(404).json({ message: "One or both teams not found" });
     }
 
     // Ensure the date is a non-empty string
-    if (typeof date !== 'string' || !date.trim()) {
-      return res.status(400).json({ message: 'Invalid date format' });
+    if (typeof date !== "string" || !date.trim()) {
+      return res.status(400).json({ message: "Invalid date format" });
     }
 
     const newMatch = await createMatch({
@@ -244,7 +240,7 @@ const createKnockoutMatch = async (req, res) => {
       date,
       stage,
       referee,
-      observer
+      observer,
       // Use the provided date string as is
       // Add other properties for the match
     });
@@ -259,113 +255,154 @@ const createKnockoutMatch = async (req, res) => {
     res.status(201).json(newMatch);
     return;
   } catch (error) {
-    console.error('Error creating knockout match manually:', error);
-    res.status(500).json({ message: 'Internal Server Error' });
+    console.error("Error creating knockout match manually:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
 const createGroupMatches = async (tournamentId) => {
   try {
-    const tournament = await Tournament.findById(tournamentId);
+    const tournament = await Tournament.findById(tournamentId).populate(
+      "groups.teams"
+    );
 
     if (!tournament) {
-      throw { status: 404, message: 'Tournament not found' };
+      throw { status: 404, message: "Tournament not found" };
+    }
+
+    if (tournament.rules?.type !== "KNOCKOUT") {
+      throw {
+        status: 400,
+        message: "Invalid tournament type for creating group matches",
+      };
     }
 
     const matches = [];
+    const groupMatches = [];
 
-    if (tournament.rules?.type === 'LEAGUE' || tournament.rules?.type === 'GROUP_KNOCKOUT') {
-      tournament.groups.forEach(async (group) => { // Use async here
-        const groupTeams = group.teams;
+    for (const group of tournament.groups) {
+      const groupTeams = group.teams.map((team) => team._id);
 
-        for (let i = 0; i < groupTeams.length; i++) {
-          for (let j = i + 1; j < groupTeams.length; j++) {
-            const team1 = groupTeams[i];
-            const team2 = groupTeams[j];
+      for (let i = 0; i < groupTeams.length; i += 2) {
+        const team1 = groupTeams[i];
+        const team2 = groupTeams[i + 1];
 
-            const newMatch = new Match({
-              team1,
-              team2,
-              tournament: tournament._id,
-              stage: 'GROUP_STAGE', // Replace with the appropriate stage value
-              date: null, // Set the date property to null
-              // Add other properties for the match
-            });
+        const newMatch = new Match({
+          team1,
+          team2,
+          tournament: tournament._id,
+          stage: "GROUP_STAGE",
+          round: 1,
+          nextMatch: null,
+          isWinner: null,
+          stadium:null,
+          date: null,
+        });
 
-            // Save the new match to the database
-            const savedMatch = await newMatch.save();
-
-            matches.push(savedMatch);
-          }
-        }
-      });
-    } else {
-      throw { status: 400, message: 'Invalid tournament type for creating group matches' };
+        groupMatches.push(newMatch);
+      }
     }
 
+    await Match.insertMany(groupMatches);
+    matches.push(...groupMatches);
+
+    let round = 2;
+    let remainingMatches = matches.length;
+
+    while (remainingMatches > 1) {
+      const roundMatches = [];
+
+      for (let i = 0; i < remainingMatches; i += 2) {
+        const newMatch = new Match({
+          team1: null,
+          team2: null,
+          tournament: tournament._id,
+          stage: "GROUP_STAGE",
+          round: round,
+          nextMatch: null,
+          isWinner: null,
+          date: null,
+        });
+
+        roundMatches.push(newMatch);
+      }
+
+      await Match.insertMany(roundMatches);
+      matches.push(...roundMatches);
+
+      remainingMatches = roundMatches.length;
+      round++;
+    }
+
+    for (let i = 0,j=0; i <= tournament.rules.nbTeams-4 ;  i += 2,j++){
+     matches[i].nextMatch=matches[i+tournament.rules.nbTeams/2 -j]._id;
+     matches[i+1].nextMatch=matches[i+tournament.rules.nbTeams/2 -j]._id;
+     
+    }
+    
+
+    await Promise.all(matches.map((match) => match.save()));
+
+    console.log("Group Matches created:", matches.length);
     return matches;
   } catch (error) {
-    console.error('Error creating group matches:', error.message);
-    throw { status: 500, message: 'Internal Server Error' };
+    console.error("Error creating group matches:", error.message);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
   }
 };
 
+const getTeamById = async (teamId) => {
+  try {
+    const team = await Team.findById(teamId);
+    return team;
+  } catch (error) {
+    console.error("Error getting team by ID:", error.message);
+    throw { status: 500, message: "Internal Server Error" };
+  }
+};
 
+const getAllMatchesForTournament = async (tournamentId) => {
+  try {
+    // Find all matches for the specified tournament ID
+    const matches = await Match.find({ tournament: tournamentId });
+    return matches;
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    throw { status: 500, message: "Internal Server Error" };
+  }
+};
 
-
-   const getTeamById = async (teamId) => {
-     try {
-       const team = await Team.findById(teamId);
-       return team;
-     } catch (error) {
-       console.error('Error getting team by ID:', error.message);
-       throw { status: 500, message: 'Internal Server Error' };
-     }
-   };
-
-   const getAllMatchesForTournament = async (tournamentId) => {
-    try {
-      // Find all matches for the specified tournament ID
-      const matches = await Match.find({ tournament: tournamentId });
-      return matches;
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-      throw { status: 500, message: 'Internal Server Error' };
-    }
-  };
-  
-
-
-
-
-
-
-  const getMatchesByUserId = async (userId) => {
-    try {
-      const matches = await Match.find({
-        $or: [{ referee: userId }, { observer: userId }]
-      }).populate({
-        path: 'team1',
-        select: 'name score' // include only 'name' and 'score' fields
-      }).populate({
-        path: 'team2',
-        select: 'name score' // include only 'name' and 'score' fields
-      }).populate({
-        path: 'referee',
-        select: '-userIdentity.password -userIdentity.email' // exclude 'password' and 'email' fields
-      }).populate({
-        path: 'observer',
-        select: '-userIdentity.password -userIdentity.email' // exclude 'password' and 'email' fields
+const getMatchesByUserId = async (userId) => {
+  try {
+    const matches = await Match.find({
+      $or: [{ referee: userId }, { observer: userId }],
+    })
+      .populate({
+        path: "team1",
+        select: "name score", // include only 'name' and 'score' fields
+      })
+      .populate({
+        path: "team2",
+        select: "name score", // include only 'name' and 'score' fields
+      })
+      .populate({
+        path: "referee",
+        select: "-userIdentity.password -userIdentity.email", // exclude 'password' and 'email' fields
+      })
+      .populate({
+        path: "observer",
+        select: "-userIdentity.password -userIdentity.email", // exclude 'password' and 'email' fields
       });
-  
-      return matches;
-    } catch (error) {
-      console.error('Error fetching matches by user ID:', error);
-      throw { status: 500, message: 'Internal Server Error' };
-    }
-  };
-  
 
+    return matches;
+  } catch (error) {
+    console.error("Error fetching matches by user ID:", error);
+    throw { status: 500, message: "Internal Server Error" };
+  }
+};
 
 module.exports = {
   getTournamentById,
@@ -377,5 +414,5 @@ module.exports = {
   getAllMatchesForTournament,
   getMatchById,
   updateMatchDateById,
-  getMatchesByUserId
+  getMatchesByUserId,
 };

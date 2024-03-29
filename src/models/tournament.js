@@ -88,12 +88,7 @@ const tournamentSchema = new mongoose.Schema({
   },
   groups: [groupSchema], // Array of group objects
   sponsors: [sponsorSchema],
-  matches: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Matches",
-    },
-  ],
+ 
 });
 
 tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
@@ -113,7 +108,7 @@ tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
 
     const group = new groupModel({
       name: groupName,
-      teams: groupTeamSlice.map((team) => team._id),
+      teams: groupTeamSlice.map((team) => team),
     });
 
     await group.save();
@@ -127,7 +122,7 @@ tournamentSchema.statics.createGroup = async function (teams) {
 
   const group = new groupModel({
     name: "group 1",
-    teams: teams.map((team) => team._id),
+    teams: teams.map((team) => team),
   });
 
   await group.save();
@@ -135,7 +130,7 @@ tournamentSchema.statics.createGroup = async function (teams) {
 
   return groups;
 };
-tournamentSchema.statics.findByOwner = async function(ownerId) {
+tournamentSchema.statics.findByOwner = async function (ownerId) {
   try {
     const tournaments = await this.find({ owner: ownerId }).select("-__v");
     if (!tournaments || tournaments.length === 0) {
@@ -143,9 +138,10 @@ tournamentSchema.statics.findByOwner = async function(ownerId) {
     }
     return tournaments;
   } catch (error) {
-    throw new Error("Error finding tournaments for the owner: " + error.message);
+    throw new Error(
+      "Error finding tournaments for the owner: " + error.message
+    );
   }
 };
-
 
 module.exports = mongoose.model("Tournaments", tournamentSchema);
