@@ -18,7 +18,6 @@ var TournamentsController = {
       location: req.body.location,
       rules: req.body.rules,
       groups: req.body.groups,
-      matches: req.body.matches,
     };
 
     const teamsPerPool = tournamentData.rules.teamsPerPool;

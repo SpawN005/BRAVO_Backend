@@ -56,7 +56,7 @@ router.post("/group-matches/:tournamentId", async (req, res) => {
     const tournamentId = req.params.tournamentId;
 
     const matches = await MatchController.createGroupMatches(tournamentId); // Pass tournamentId to the controller
-
+console.log(matches)
     res.status(201).json(matches);
   } catch (error) {
     console.error("Error creating group matches:", error);

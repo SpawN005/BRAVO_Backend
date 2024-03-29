@@ -264,7 +264,9 @@ const createGroupMatches = async (tournamentId) => {
   const matches = [];
   const groupMatches = [];
   try {
-    const tournament = await Tournament.findById(tournamentId);
+    const tournament = await Tournament.findById(tournamentId).populate(
+      "groups.teams"
+    );
 
     if (!tournament) {
       throw { status: 404, message: "Tournament not found" };
@@ -292,6 +294,70 @@ const createGroupMatches = async (tournamentId) => {
           matches.push(savedMatch);
         }
       }
+    } else if (tournament.rules?.type === "KNOCKOUT") {
+      for (const group of tournament.groups) {
+        const groupTeams = group.teams.map((team) => team._id);
+
+        for (let i = 0; i < groupTeams.length; i += 2) {
+          const team1 = groupTeams[i];
+          const team2 = groupTeams[i + 1];
+
+          const newMatch = new Match({
+            team1,
+            team2,
+            tournament: tournament._id,
+            stage: "GROUP_STAGE",
+            round: 1,
+            nextMatch: null,
+            isWinner: null,
+            date: null,
+          });
+
+          groupMatches.push(newMatch);
+        }
+      }
+
+      await Match.insertMany(groupMatches);
+      matches.push(...groupMatches);
+
+      let round = 2;
+      let remainingMatches = matches.length;
+
+      while (remainingMatches > 1) {
+        const roundMatches = [];
+
+        for (let i = 0; i < remainingMatches; i += 2) {
+          const newMatch = new Match({
+            team1: null,
+            team2: null,
+            tournament: tournament._id,
+            stage: "GROUP_STAGE",
+            round: round,
+            nextMatch: null,
+            isWinner: null,
+            date: null,
+          });
+
+          roundMatches.push(newMatch);
+        }
+
+        await Match.insertMany(roundMatches);
+        matches.push(...roundMatches);
+
+        remainingMatches = roundMatches.length;
+        round++;
+      }
+
+      for (let i = 0, j = 0; i <= tournament.rules.nbTeams - 4; i += 2, j++) {
+        matches[i].nextMatch =
+          matches[i + tournament.rules.nbTeams / 2 - j]._id;
+        matches[i + 1].nextMatch =
+          matches[i + tournament.rules.nbTeams / 2 - j]._id;
+      }
+
+      await Promise.all(matches.map((match) => match.save()));
+
+      console.log("Group Matches created:", matches.length);
     } else {
       throw {
         status: 400,
@@ -356,58 +422,6 @@ const getMatchesByUserId = async (userId) => {
   }
 };
 
-const test = async (tournamentId) => {
-  const matches = [];
-  try {
-    const tournament = await Tournament.findById(tournamentId);
-
-    if (!tournament) {
-      throw { status: 404, message: "Tournament not found" };
-    }
-
-    if (
-      tournament.rules?.type === "KNOCKOUT" ||
-      tournament.rules?.type === "GROUP_KNOCKOUT"
-    ) {
-      console.log(tournament.rules.nbTeams);
-      console.log(tournament.groups);
-      for (const group of tournament.groups) {
-        const groupTeams = group.teams;
-
-        for (let i = 0; i < groupTeams.length; i++) {
-          for (let j = i + 1; j < groupTeams.length; j++) {
-            const team1 = groupTeams[i];
-            const team2 = groupTeams[j];
-
-            const newMatch = new Match({
-              team1,
-              team2,
-              tournament: tournament._id,
-              stage: "GROUP_STAGE", // Replace with the appropriate stage value
-              date: null, // Set the date property to null
-              // Add other properties for the match
-            });
-
-            const savedMatch = await newMatch.save();
-
-            matches.push(savedMatch);
-          }
-        }
-      }
-    } else {
-      throw {
-        status: 400,
-        message: "Invalid tournament type for creating group matches",
-      };
-    }
-
-    return matches;
-  } catch (error) {
-    console.error("Error creating group matches:", error.message);
-    throw { status: 500, message: "Internal Server Error" };
-  }
-};
-
 module.exports = {
   getTournamentById,
   getTeamsInTournament,
@@ -419,5 +433,4 @@ module.exports = {
   getMatchById,
   updateMatchDateById,
   getMatchesByUserId,
-  test,
 };
