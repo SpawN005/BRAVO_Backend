@@ -30,6 +30,7 @@ var TournamentsController = {
 
         break;
       case "KNOCKOUT":
+        Tgroups = await TournamentModel.createGroups(req.body.teams, 2);
         break;
       case "GROUP_KNOCKOUT":
         Tgroups = await TournamentModel.createGroups(
@@ -66,10 +67,12 @@ var TournamentsController = {
       res.status(200).send(tournaments);
     });
   },
-
   getById: function (req, res) {
     TournamentModel.findById(req.params.id)
-      .populate("groups.teams")
+      .populate({
+        path: "standings",
+        populate: { path: "team" }, // Assuming "team" is the field referencing teams in the standings document
+      })
       .exec(function (err, tournament) {
         if (err) {
           return res.status(500).send({
@@ -79,9 +82,14 @@ var TournamentsController = {
         if (!tournament) {
           return res.status(404).send({ message: "Tournament not found" });
         }
+
+        // Sort the standings by points in descending order
+        tournament.standings.sort((a, b) => b.points - a.points);
+
         res.status(200).send(tournament);
       });
   },
+
   getByIdOwner: async function (req, res) {
     try {
       const ownerId = req.params.id;

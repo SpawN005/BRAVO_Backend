@@ -1,6 +1,7 @@
 var mongoose = require("mongoose");
 const isEmpty = require("../utils/isEmpty.js");
 const User = require("./users.js");
+
 const teamSchema = new mongoose.Schema({
   manager: {
     type: mongoose.Schema.Types.ObjectId,

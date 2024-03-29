@@ -23,7 +23,7 @@ const matchSchema = new mongoose.Schema({
   team1: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Teams",
-    required: true,
+    // required: true,
   },
   statsTeam1: {
     type: mongoose.Schema.Types.ObjectId,
@@ -32,7 +32,7 @@ const matchSchema = new mongoose.Schema({
   team2: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Teams",
-    required: true,
+    // required: true,
   },
   statsTeam2: {
     type: mongoose.Schema.Types.ObjectId,
@@ -42,7 +42,6 @@ const matchSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Stadiums",
   },
-
   observer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Users", // Reference to User model
@@ -50,6 +49,16 @@ const matchSchema = new mongoose.Schema({
   referee: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Users", // Reference to User model
+  },
+  round: {
+    type: Number,
+  },
+  nextMatch: {
+    type: mongoose.Schema.Types.ObjectId,
+  },
+  winner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Teams",
   },
 });
 
