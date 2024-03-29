@@ -10,10 +10,6 @@ var TournamentsController = {
       });
     }
 
-    // console.log(req.body.managerEmails);
-    // const teams = await TeamModel.getTeamByManagers(req.body.managerEmails);
-    // console.log("Teams:", teams);
-    console.log(req.body);
     const tournamentData = {
       name: req.body.name,
       owner: req.body.owner,
@@ -31,6 +27,7 @@ var TournamentsController = {
     switch (tournamentData.rules.type) {
       case "LEAGUE":
         Tgroups = await TournamentModel.createGroup(req.body.teams);
+
         break;
       case "KNOCKOUT":
         break;
@@ -45,18 +42,20 @@ var TournamentsController = {
     }
 
     tournamentData.groups = Tgroups;
-    const newTournament = new TournamentModel(tournamentData);
-    newTournament.save(function (err, tournament) {
-      if (err) {
-        return res.status(500).send({
-          message: "Error occurred while creating the tournament",
-          error: err,
-        });
-      }
-      res.status(201).send(tournament);
-    });
-  },
 
+    const newTournament = new TournamentModel(tournamentData);
+
+    try {
+      await newTournament.save();
+
+      res.status(201).send(newTournament);
+    } catch (err) {
+      res.status(500).send({
+        message: "Error occurred while creating the tournament",
+        error: err,
+      });
+    }
+  },
   getAll: function (req, res) {
     TournamentModel.find({}, function (err, tournaments) {
       if (err) {
@@ -69,17 +68,19 @@ var TournamentsController = {
   },
 
   getById: function (req, res) {
-    TournamentModel.findById(req.params.id, function (err, tournament) {
-      if (err) {
-        return res
-          .status(500)
-          .send({ message: "Error occurred while retrieving the tournament" });
-      }
-      if (!tournament) {
-        return res.status(404).send({ message: "Tournament not found" });
-      }
-      res.status(200).send(tournament);
-    });
+    TournamentModel.findById(req.params.id)
+      .populate("groups.teams")
+      .exec(function (err, tournament) {
+        if (err) {
+          return res.status(500).send({
+            message: "Error occurred while retrieving the tournament",
+          });
+        }
+        if (!tournament) {
+          return res.status(404).send({ message: "Tournament not found" });
+        }
+        res.status(200).send(tournament);
+      });
   },
   getByIdOwner: async function (req, res) {
     try {
