@@ -142,6 +142,7 @@ const tournamentSchema = new mongoose.Schema({
 });
 
 tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
+  console.log(teamsPerPool);
   if (!teams || teams.length === 0 || !teamsPerPool) {
     throw new Error("Invalid teams or teamsPerPool provided");
   }

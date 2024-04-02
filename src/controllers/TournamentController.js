@@ -1,6 +1,10 @@
 var TournamentModel = require("../models/tournament");
 var UsersModel = require("../models/users");
 var TeamModel = require("../models/team");
+const {
+  createGroupMatches,
+  createGroupKnockoutMatches,
+} = require("./match.controller");
 
 var TournamentsController = {
   insert: async function (req, res) {
@@ -47,6 +51,13 @@ var TournamentsController = {
 
     try {
       await newTournament.save();
+      switch (tournamentData.rules.type) {
+        case "GROUP_KNOCKOUT":
+          await createGroupKnockoutMatches(newTournament._id);
+          break;
+        default:
+          await createGroupMatches(newTournament._id);
+      }
 
       res.status(201).send(newTournament);
     } catch (err) {

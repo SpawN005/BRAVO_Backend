@@ -215,51 +215,6 @@ const createMatch = async ({
   }
 };
 
-const createKnockoutMatch = async (req, res) => {
-  try {
-    const { team1Id, team2Id, date, referee, observer } = req.body;
-    const tournamentId = req.params.tournamentId;
-    console.log(req.body);
-    const team1 = await getTeamById(team1Id);
-    const team2 = await getTeamById(team2Id);
-    const stage = "Knockout Stage";
-
-    if (!team1 || !team2) {
-      return res.status(404).json({ message: "One or both teams not found" });
-    }
-
-    // Ensure the date is a non-empty string
-    if (typeof date !== "string" || !date.trim()) {
-      return res.status(400).json({ message: "Invalid date format" });
-    }
-
-    const newMatch = await createMatch({
-      team1,
-      team2,
-      tournament: tournamentId,
-      date,
-      stage,
-      referee,
-      observer,
-      // Use the provided date string as is
-      // Add other properties for the match
-    });
-
-    // Log specific properties of newMatch, not the entire object
-    console.log({
-      _id: newMatch._id,
-      date: newMatch.date,
-      // Add other properties you want to log
-    });
-
-    res.status(201).json(newMatch);
-    return;
-  } catch (error) {
-    console.error("Error creating knockout match manually:", error);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-};
-
 const createGroupMatches = async (tournamentId) => {
   const matches = [];
   const groupMatches = [];
@@ -385,8 +340,67 @@ const getTeamById = async (teamId) => {
 const getAllMatchesForTournament = async (tournamentId) => {
   try {
     // Find all matches for the specified tournament ID
-    const matches = await Match.find({ tournament: tournamentId });
+    const matches = await Match.find({ tournamentId })
+      .populate({
+        path: "team1",
+        select: "name ",
+      })
+      .populate({
+        path: "team2",
+        select: "name ",
+      });
     return matches;
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    throw { status: 500, message: "Internal Server Error" };
+  }
+};
+const getBracketForTournament = async (tournamentId) => {
+  console.log(tournamentId);
+  try {
+    // Find all matches for the specified tournament ID, sorted by round
+    const matches = await Match.find({ tournament: tournamentId })
+      .sort({ round: 1 })
+      .populate({
+        path: "team1",
+        select: "name",
+      })
+      .populate({
+        path: "team2",
+        select: "name",
+      });
+
+    // Create an object to store rounds, using round number as keys
+    const rounds = {};
+
+    // Organize matches into the round structure
+    matches.forEach((match) => {
+      const { round, _id, date, team1, team2 } = match;
+
+      // Check if the round already exists in the rounds object
+      if (!rounds[round]) {
+        // If the round doesn't exist, create a new round object
+        rounds[round] = {
+          title: `Round ${round}`,
+          seeds: [],
+        };
+      }
+
+      // Add the match data to the corresponding round
+      rounds[round].seeds.push({
+        id: _id,
+        date: date ? new Date(date).toDateString() : null,
+        teams: [
+          { name: team1 ? team1.name : "TBD" },
+          { name: team2 ? team2.name : "TBD" },
+        ],
+      });
+    });
+
+    // Convert the rounds object into an array of rounds
+    const roundsArray = Object.values(rounds);
+    console.log(roundsArray.length);
+    return roundsArray;
   } catch (error) {
     console.error("Error fetching matches:", error);
     throw { status: 500, message: "Internal Server Error" };
@@ -421,16 +435,133 @@ const getMatchesByUserId = async (userId) => {
     throw { status: 500, message: "Internal Server Error" };
   }
 };
+// const determineTopTeams = (groups, standings, numTopTeams) => {
+//   const topTeamsPerGroup = {};
+
+//   groups.forEach((group) => {
+//     const teamIds = group.teams.map((team) => team._id.toString());
+
+//     const groupStandings = standings.filter((standing) =>
+//       teamIds.includes(standing.team.toString())
+//     );
+//     console.log(groupStandings);
+//     groupStandings.sort((a, b) => {
+//       if (a.points !== b.points) {
+//         return b.points - a.points; // Sort by points (descending)
+//       }
+//       // Add additional tie-breaking logic if needed
+//       // For example, comparing goal difference, goals scored, etc.
+//     });
+
+//     const topTeams = groupStandings
+//       .slice(0, numTopTeams)
+//       .map((standing) => standing.team);
+//     topTeamsPerGroup[group._id] = topTeams;
+//   });
+
+//   console.log(topTeamsPerGroup);
+// };
+
+const createGroupKnockoutMatches = async (tournamentId) => {
+  try {
+    const tournament = await Tournament.findById(tournamentId).populate(
+      "groups.teams"
+    );
+
+    if (!tournament) {
+      throw { status: 404, message: "Tournament not found" };
+    }
+
+    const matches = [];
+
+    // Create group stage matches
+    const groupMatches = [];
+    for (const group of tournament.groups) {
+      const groupTeams = group.teams.map((team) => team._id);
+
+      for (let i = 0; i < groupTeams.length; i += 2) {
+        const team1 = groupTeams[i];
+        const team2 = groupTeams[i + 1];
+
+        const newMatch = new Match({
+          team1,
+          team2,
+          tournament: tournament._id,
+          stage: "GROUP_STAGE",
+          round: 0,
+          nextMatch: null,
+          isWinner: null,
+          date: null,
+        });
+
+        groupMatches.push(newMatch);
+      }
+    }
+
+    // Insert group stage matches
+    const insertedGroupMatches = await Match.insertMany(groupMatches);
+    matches.push(...insertedGroupMatches);
+
+    console.log("Group Stage Matches created:", insertedGroupMatches.length);
+
+    // Create knockout stage matches
+    let remainingMatches = tournament.groups.length;
+    let round = 1;
+    while (remainingMatches > 1) {
+      const roundMatches = [];
+
+      for (let i = 0; i < remainingMatches; i += 2) {
+        const newMatch = new Match({
+          team1: null,
+          team2: null,
+          tournament: tournament._id,
+          stage: "KNOCKOUT_STAGE",
+          round: round,
+          nextMatch: null,
+          isWinner: null,
+          date: null,
+        });
+
+        roundMatches.push(newMatch);
+      }
+
+      // Insert knockout stage matches
+      const insertedRoundMatches = await Match.insertMany(roundMatches);
+      matches.push(...insertedRoundMatches);
+
+      remainingMatches = insertedRoundMatches.length;
+      round++;
+    }
+
+    // Set nextMatch for knockout stage matches
+    for (let i = 0, j = 0; i <= matches.length - 4; i += 2, j++) {
+      if (matches[i].round != 0) {
+        matches[i].nextMatch = matches[i + matches.length / 2 - j]._id;
+        matches[i + 1].nextMatch = matches[i + matches.length / 2 - j]._id;
+      }
+    }
+    console.log(matches);
+    // Save all matches
+    await Promise.all(matches.map((match) => match.save()));
+
+    console.log("Matches created:", matches.length);
+    return matches;
+  } catch (error) {
+    console.error("Error creating matches:", error.message);
+    throw { status: 500, message: "Internal Server Error" };
+  }
+};
 
 module.exports = {
   getTournamentById,
   getTeamsInTournament,
   getAllTeamsInTournament,
-  createKnockoutMatch,
+  createGroupKnockoutMatches,
   getTeamById,
   createGroupMatches,
   getAllMatchesForTournament,
   getMatchById,
   updateMatchDateById,
   getMatchesByUserId,
+  getBracketForTournament,
 };

@@ -59,13 +59,6 @@ const matchSchema = new mongoose.Schema({
   round: {
     type: Number,
   },
-  nextMatch: {
-    type: mongoose.Schema.Types.ObjectId,
-  },
-  winner: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Teams",
-  },
 });
 
 module.exports = mongoose.model("Matches", matchSchema);

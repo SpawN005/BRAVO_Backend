@@ -56,7 +56,7 @@ router.post("/group-matches/:tournamentId", async (req, res) => {
     const tournamentId = req.params.tournamentId;
 
     const matches = await MatchController.createGroupMatches(tournamentId); // Pass tournamentId to the controller
-console.log(matches)
+    console.log(matches);
     res.status(201).json(matches);
   } catch (error) {
     console.error("Error creating group matches:", error);
@@ -74,6 +74,21 @@ router.get("/matches/:tournamentId", async (req, res) => {
     const matches = await MatchController.getAllMatchesForTournament(
       tournamentId
     );
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
+router.get("/bracket/:tournamentId", async (req, res) => {
+  try {
+    const tournamentId = req.params.tournamentId;
+
+    // Call the controller method to get all matches for the specified tournament ID
+    const matches = await MatchController.getBracketForTournament(tournamentId);
 
     res.status(200).json(matches);
   } catch (error) {
@@ -119,7 +134,44 @@ router.patch("update-date/:matchId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
+router.patch("finish/:matchId", async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+    const winningTeamId = req.body.winningTeamId;
 
+    // Call the controller method to update the date of the match by ID
+    const updatedMatch = await MatchController.updateMatchDateById(matchId, {
+      isWinner: winningTeamId,
+    });
+
+    if (updatedMatch.nextMatch) {
+      // Retrieve the details of the next match
+      const nextMatch = await MatchController.getMatchById(
+        updatedMatch.nextMatch
+      );
+
+      // Update the team information of the next match based on the winning team
+      if (nextMatch) {
+        const teamField =
+          updatedMatch.team1 === winningTeamId ? "team1" : "team2";
+        const updatedNextMatch = await MatchController.updateNextMatchTeam(
+          nextMatch._id,
+          teamField,
+          winningTeamId
+        );
+
+        console.log("Next match updated:", updatedNextMatch);
+      }
+    }
+
+    res.status(200).json(updatedMatch);
+  } catch (error) {
+    console.error("Error finishing match:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
 // not mine just for test
 router.get("/:teamId", async (req, res) => {
   try {
