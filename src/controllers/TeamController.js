@@ -2,6 +2,7 @@ const Team = require("../models/team");
 const Player = require("../models/players");
 const User = require("../models/users");
 
+
 // Méthode pour créer une équipe
 exports.createTeam = async (req, res) => {
   try {
@@ -94,9 +95,7 @@ exports.addTeamAndPlayers = async (req, res) => {
 
     // 3. Create the team instance
     const team = new Team({ name, logo, city, country, manager });
-    if (req.file) {
-      team.logo = req.file.path;
-    }
+    
     // 4. Create and link player instances
     const playerPromises = players.map(async (playerData) => {
       const player = new Player(playerData);
@@ -132,3 +131,4 @@ exports.getTeamById = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+

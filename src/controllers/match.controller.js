@@ -5,7 +5,25 @@ const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
 
-const getMatchById = async (matchId) => {
+ // Initialize Socket.IO instance (assuming you have already created an HTTP server)
+ async function getMatchesByTeamId(teamId) {
+  try {
+    const matches = await Match.find({
+      $or: [
+        { team1: teamId },
+        { team2: teamId }
+      ]
+    }).populate('team1 team2');
+    return matches;
+  } catch (error) {
+    console.error('Error fetching matches by team ID:', error);
+    throw error;
+  }
+}
+
+
+
+ const getMatchById = async (matchId) => {
   try {
     // Find the match by ID
     const match = await Match.findById(matchId);
@@ -22,7 +40,6 @@ const getMatchById = async (matchId) => {
     };
   }
 };
-
 const updateMatchDateById = async (matchId, newDate) => {
   try {
     // Find the match by ID and update its date
@@ -199,6 +216,7 @@ const createMatch = async ({
   }
 };
 
+
 const createKnockoutMatch = async (req, res) => {
   try {
     const { team1Id, team2Id, date, referee, observer } = req.body;
@@ -356,47 +374,43 @@ const createGroupMatches = async (tournamentId) => {
   }
 };
 
-const getTeamById = async (teamId) => {
-  try {
-    const team = await Team.findById(teamId);
-    return team;
-  } catch (error) {
-    console.error("Error getting team by ID:", error.message);
-    throw { status: 500, message: "Internal Server Error" };
-  }
-};
+   const getTeamById = async (teamId) => {
+     try {
+       const team = await Team.findById(teamId);
+       return team;
+     } catch (error) {
+       console.error('Error getting team by ID:', error.message);
+       throw { status: 500, message: 'Internal Server Error' };
+     }
+   };
 
-const getAllMatchesForTournament = async (tournamentId) => {
-  try {
-    // Find all matches for the specified tournament ID
-    const matches = await Match.find({ tournament: tournamentId });
-    return matches;
-  } catch (error) {
-    console.error("Error fetching matches:", error);
-    throw { status: 500, message: "Internal Server Error" };
-  }
-};
+   const getAllMatchesForTournament = async (tournamentId) => {
+    try {
+      // Find all matches for the specified tournament ID
+      const matches = await Match.find({ tournament: tournamentId });
+      return matches;
+    } catch (error) {
+      console.error('Error fetching matches:', error);
+      throw { status: 500, message: 'Internal Server Error' };
+    }
+  };
 
-const getMatchesByUserId = async (userId) => {
-  try {
-    const matches = await Match.find({
-      $or: [{ referee: userId }, { observer: userId }],
-    })
-      .populate({
-        path: "team1",
-        select: "name score", // include only 'name' and 'score' fields
-      })
-      .populate({
-        path: "team2",
-        select: "name score", // include only 'name' and 'score' fields
-      })
-      .populate({
-        path: "referee",
-        select: "-userIdentity.password -userIdentity.email", // exclude 'password' and 'email' fields
-      })
-      .populate({
-        path: "observer",
-        select: "-userIdentity.password -userIdentity.email", // exclude 'password' and 'email' fields
+  const getMatchesByUserId = async (userId) => {
+    try {
+      const matches = await Match.find({
+        $or: [{ referee: userId }, { observer: userId }]
+      }).populate({
+        path: 'team1',
+        select: 'name score logo' // include only 'name' and 'score' fields
+      }).populate({
+        path: 'team2',
+        select: 'name score logo' // include only 'name' and 'score' fields
+      }).populate({
+        path: 'referee',
+        select: '-userIdentity.password -userIdentity.email' // exclude 'password' and 'email' fields
+      }).populate({
+        path: 'observer',
+        select: '-userIdentity.password -userIdentity.email' // exclude 'password' and 'email' fields
       });
 
     return matches;
@@ -437,4 +451,5 @@ module.exports = {
   updateMatchDateById,
   getMatchesByUserId,
   patchTMatchById,
+  getMatchesByTeamId
 };
