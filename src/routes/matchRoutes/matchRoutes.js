@@ -18,6 +18,15 @@ router.get('/tournaments/:tournamentId', async (req, res) => {
     }
   }
 });
+router.get('/matches/:teamId', async (req, res) => {
+  const teamId = req.params.teamId;
+  try {
+    const matches = await MatchController.getMatchesByTeamId(teamId);
+    res.json(matches);
+  } catch (error) {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 router.get('/teams/:tournamentId', async (req, res) => {
     try {
       const tournamentId = req.params.tournamentId;
@@ -132,7 +141,7 @@ router.patch('update-date/:matchId', async (req, res) => {
 router.post('/update-score', async (req, res) => {
   try {
     // Add logic to update the score
-    const updatedScore = await MatchController.updateScore(req.body);
+    const updatedScore = await MatchController.updatedScore(req.body);
 
     // Emit an event to notify clients about the updated score
     io.emit('scoreUpdated', { updatedScore });

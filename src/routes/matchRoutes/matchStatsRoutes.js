@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const matchStatController = require('../../controllers/matchStat.controller');
+const Match = require('../../models/matches');
 
 // Route to handle match actions
 router.post('/score/:matchId', async (req, res) => {
@@ -10,6 +11,19 @@ router.post('/score/:matchId', async (req, res) => {
 
 
     const result = await matchStatController.scoreGoal(idmatch, idplayer1, idplayer2, idteam);
+
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+router.post('/assist/:matchId', async (req, res) => {
+  try {
+    const idmatch = req.params.matchId;
+    const { idplayer, idteam } = req.body;
+
+
+    const result = await matchStatController.assistOnly(idmatch, idplayer, idteam);
 
     res.json(result);
   } catch (error) {
@@ -45,7 +59,7 @@ router.post('/yellow-card/:matchId', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
-});
+});   
 
 router.post('/red-card/:matchId', async (req, res) => {
   try {
@@ -72,7 +86,57 @@ router.post('/lineup/:matchId', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+router.get('/:matchId/:teamId', async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+    const teamId = req.params.teamId;
 
+    // Call the controller method to get the match by ID
+    const match = await matchStatController.getMatchStats(matchId,teamId);
+
+    res.status(200).json(match);
+  } catch (error) {
+    console.error('Error getting match by ID:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+router.post('/updateTeamWin/:matchId', async (req, res) => {
+  try {
+      const  matchId  = req.params.matchId;
+      
+      const { team1Id, team2Id } = req.body;
+      const match = await Match.findById(matchId);
+
+      if (!match) {
+          return res.status(404).json({ message: 'Match not found' });
+      }
+
+      await matchStatController.updateTeamWin(matchId, team1Id, team2Id);
+
+      res.status(200).json({ message: 'Team wins updated successfully' });
+  } catch (error) {
+      console.error('Error updating team wins:', error);
+      res.status(500).json({ message: 'Internal server error' });
+  }
+});
+router.post('/startMatch/:matchId', async (req, res) => {
+  try {
+      const  matchId  = req.params.matchId;
+      
+      const match = await Match.findById(matchId);
+
+      if (!match) {
+          return res.status(404).json({ message: 'Match not found' });
+      }
+
+      await matchStatController.startMatch(matchId);
+
+      res.status(200).json({ message: 'Team wins updated successfully' });
+  } catch (error) {
+      console.error('Error updating team wins:', error);
+      res.status(500).json({ message: 'Internal server error' });
+  }
+});
 // router.get('/lineup/:matchId/:teamId', async (req, res) => {
 //   try {
 //     const idmatch = req.params.matchId;

@@ -6,6 +6,22 @@ const Tournament = require('../models/tournament');
  const Player = require('../models/players');
  
 
+ // Initialize Socket.IO instance (assuming you have already created an HTTP server)
+ async function getMatchesByTeamId(teamId) {
+  try {
+    const matches = await Match.find({
+      $or: [
+        { team1: teamId },
+        { team2: teamId }
+      ]
+    }).populate('team1 team2');
+    return matches;
+  } catch (error) {
+    console.error('Error fetching matches by team ID:', error);
+    throw error;
+  }
+}
+
 
 
  const getMatchById = async (matchId) => {
@@ -20,6 +36,11 @@ const Tournament = require('../models/tournament');
     // Find the teams by their IDs
     const team1 = await Team.findById(match.team1);
     const team2 = await Team.findById(match.team2);
+    const team1p = await Team.findById(match.team1).populate("players"); 
+    const team2p = await Team.findById(match.team2).populate("lineup"); 
+
+    const team1Stats = await MatchStats.findOne({ match: matchId, team: match.team1 });
+    const team2Stats = await MatchStats.findOne({ match: matchId, team: match.team2 });
 
     if (!team1 || !team2) {
       throw { status: 404, message: 'One or more teams not found' };
@@ -27,9 +48,19 @@ const Tournament = require('../models/tournament');
 
     // Add the team names to the match object
     const matchWithTeamNames = {
-      ...match.toObject(), // Convert Mongoose document to plain object
+      ...match.toObject(), 
       team1Name: team1.name,
-      team2Name: team2.name
+      team2Name: team2.name,
+      team1p,
+      team2p,
+      team1: {
+        ...team1.toObject(),
+        stats: team1Stats.toObject()
+      },
+      team2: {
+        ...team2.toObject(),
+        stats: team2Stats.toObject()
+      }
     };
 
     return matchWithTeamNames;
@@ -38,7 +69,6 @@ const Tournament = require('../models/tournament');
     throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
   }
 };
-
 const updateMatchDateById = async (matchId, newDate) => {
   try {
     // Find the match by ID and update its date
@@ -213,12 +243,6 @@ const createMatch = async ({
 };
 
 
-
-
-
-
-
-
 const createKnockoutMatch = async (req, res) => {
   try {
     const { team1Id, team2Id, date, referee, observer } = req.body;
@@ -346,10 +370,10 @@ const createGroupMatches = async (tournamentId) => {
         $or: [{ referee: userId }, { observer: userId }]
       }).populate({
         path: 'team1',
-        select: 'name score' // include only 'name' and 'score' fields
+        select: 'name score logo' // include only 'name' and 'score' fields
       }).populate({
         path: 'team2',
-        select: 'name score' // include only 'name' and 'score' fields
+        select: 'name score logo' // include only 'name' and 'score' fields
       }).populate({
         path: 'referee',
         select: '-userIdentity.password -userIdentity.email' // exclude 'password' and 'email' fields
@@ -377,5 +401,6 @@ module.exports = {
   getAllMatchesForTournament,
   getMatchById,
   updateMatchDateById,
-  getMatchesByUserId
+  getMatchesByUserId,
+  getMatchesByTeamId
 };
