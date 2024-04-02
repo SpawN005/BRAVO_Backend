@@ -54,18 +54,25 @@ const matchSchema = new mongoose.Schema({
   },
   nextMatch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Matches", // Reference to another Match
+    ref: "Matches", 
   },
   round: {
     type: Number,
   },
-  nextMatch: {
-    type: mongoose.Schema.Types.ObjectId,
+  status:{
+    type: String,
+    default: "UPCOMING",
   },
-  winner: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Teams",
-  },
+  
+});
+matchSchema.pre("save", function (next) {
+  const currentDate = new Date();
+  if (this.date < currentDate) {
+    this.status = "FINISHED";
+  } else {
+    this.status = "UPCOMING";
+  }
+  next();
 });
 
 module.exports = mongoose.model("Matches", matchSchema);

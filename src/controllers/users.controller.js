@@ -183,7 +183,61 @@ exports.getObserversByTournamentId = (req, res) => {
       })
     );
 };
-
+exports.getObservers = (req, res) => {
+  UserModel.findByPermissionLevel(2)
+    .then((users) => {
+      const observers = users;
+      console.log("observers", observers);
+      if (observers.length > 0) {
+        res.status(200).send({
+          code: 200,
+          status: "success",
+          data: observers,
+        });
+      } else {
+        res.status(404).send({
+          code: 404,
+          status: "not found",
+          message: "No observers found ",
+        });
+      }
+    })
+    .catch((error) =>
+      res.status(500).send({
+        code: 500,
+        status: "error",
+        message: "An error occurred while fetching observers",
+        error: error,
+      })
+    );
+};
+exports.getReferees = (req, res) => {
+  UserModel.findByPermissionLevel(1)
+    .then((users) => {
+      const Referees = users;
+      if (Referees.length > 0) {
+        res.status(200).send({
+          code: 200,
+          status: "success",
+          data: Referees,
+        });
+      } else {
+        res.status(404).send({
+          code: 404,
+          status: "not found",
+          message: "No Referees found ",
+        });
+      }
+    })
+    .catch((error) =>
+      res.status(500).send({
+        code: 500,
+        status: "error",
+        message: "An error occurred while fetching Referees",
+        error: error,
+      })
+    );
+};
 exports.getRefereesByTournamentId = (req, res) => {
   UserModel.findByTournamentId(req.params.tournamentId)
     .then((users) => {

@@ -64,7 +64,9 @@ const initializeGetRoutes = (app) => {
   app.get("/users", [ValidationMiddleware.validJWTNeeded, UsersController.list]);
 
   app.get("/observers/:tournamentId", [UsersController.getObserversByTournamentId]);
+  app.get("/observers", [UsersController.getObservers]);
   app.get("/referees/:tournamentId", [UsersController.getRefereesByTournamentId]);
+  app.get("/referees", [UsersController.getReferees]);
 
 };
 

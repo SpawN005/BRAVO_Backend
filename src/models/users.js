@@ -104,12 +104,27 @@ exports.findByEmail = (email) => {
   });
 };
 //-------------------------------------------------------
+
 exports.findByEmails = (emails) => {
   return new Promise((resolve, reject) => {
     User.find({ "userIdentity.email": { $in: emails } })
       .select("-__v")
       .exec(function (err, users) {
         if (err || !users) {
+          reject(err);
+        } else {
+          resolve(users);
+        }
+      });
+  });
+};
+//-------------------------------------------------------
+exports.findByPermissionLevel = (level) => {
+  return new Promise((resolve, reject) => {
+    User.find({ permissionLevel: level })
+      .select("-__v")
+      .exec(function (err, users) {
+        if (err || users.length === 0) {
           reject(err);
         } else {
           resolve(users);
