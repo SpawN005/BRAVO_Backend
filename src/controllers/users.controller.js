@@ -13,8 +13,6 @@ exports.insert = (req, res) => {
         message: "Email already exists",
       });
     })
-
-
     .catch(() => {
      // Map roles to permission levels
      const rolePermissionMapping = {
@@ -23,25 +21,17 @@ exports.insert = (req, res) => {
       'MANAGER': 3,
       'ORGANIZER': 4
     };
-    
     let permissionLevel = rolePermissionMapping[req.body.role] || req.body.permissionLevel;
-
-
         let salt = crypto.randomBytes(16).toString("base64");
         let hash = crypto
           .createHmac("sha512", salt)
           .update(req.body.password)
           .digest("base64");
         req.body.password = salt + "$" + hash;
-      
-      console.log(req.body)
-      console.log(permissionLevel)
       let newUser = {
         userIdentity: req.body,
         permissionLevel: permissionLevel,
       };
-
-      
       UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
           result = result.toJSON();
@@ -86,7 +76,9 @@ exports.getById = (req, res) => {
 //-------------------------------------------------------------
 // Updating
 exports.patchById = (req, res) => {
-  if (req.body.password) {
+  console.log(req.body.userIdentity);
+
+  if (req.body.userIdentity.password) {
     let salt = crypto.randomBytes(16).toString("base64");
     let hash = crypto
       .createHmac("sha512", salt)
@@ -94,7 +86,6 @@ exports.patchById = (req, res) => {
       .digest("base64");
     req.body.password = salt + "$" + hash;
   }
-  console.log(req.body);
   UserModel.patchUser(req.params.userId, req.body)
     .then((result) => {
       res.status(200).send({
@@ -110,6 +101,7 @@ exports.patchById = (req, res) => {
         message: "User not found, retry with a valid userId.",
       })
     );
+    
 };
 //-------------------------------------------------------------
 // Fetching users
