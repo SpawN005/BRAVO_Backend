@@ -399,7 +399,7 @@ const getBracketForTournament = async (tournamentId) => {
 
     // Convert the rounds object into an array of rounds
     const roundsArray = Object.values(rounds);
-    console.log(roundsArray.length);
+    console.log(roundsArray);
     return roundsArray;
   } catch (error) {
     console.error("Error fetching matches:", error);
@@ -505,11 +505,11 @@ const createGroupKnockoutMatches = async (tournamentId) => {
     console.log("Group Stage Matches created:", insertedGroupMatches.length);
 
     // Create knockout stage matches
-    let remainingMatches = tournament.groups.length;
+    let remainingMatches = tournament.groups.length * 2;
     let round = 1;
+    const knock = [];
     while (remainingMatches > 1) {
       const roundMatches = [];
-
       for (let i = 0; i < remainingMatches; i += 2) {
         const newMatch = new Match({
           team1: null,
@@ -528,19 +528,18 @@ const createGroupKnockoutMatches = async (tournamentId) => {
       // Insert knockout stage matches
       const insertedRoundMatches = await Match.insertMany(roundMatches);
       matches.push(...insertedRoundMatches);
-
+      knock.push(...insertedRoundMatches);
       remainingMatches = insertedRoundMatches.length;
       round++;
     }
+    let test = tournament.groups.length * 2;
 
     // Set nextMatch for knockout stage matches
-    for (let i = 0, j = 0; i <= matches.length - 4; i += 2, j++) {
-      if (matches[i].round != 0) {
-        matches[i].nextMatch = matches[i + matches.length / 2 - j]._id;
-        matches[i + 1].nextMatch = matches[i + matches.length / 2 - j]._id;
-      }
+    for (let i = 0, j = 0; i <= test - 4; i += 2, j++) {
+      knock[i].nextMatch = knock[i + test / 2 - j]._id;
+      knock[i + 1].nextMatch = knock[i + test / 2 - j]._id;
     }
-    console.log(matches);
+
     // Save all matches
     await Promise.all(matches.map((match) => match.save()));
 
