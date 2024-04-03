@@ -104,12 +104,27 @@ exports.findByEmail = (email) => {
   });
 };
 //-------------------------------------------------------
+
 exports.findByEmails = (emails) => {
   return new Promise((resolve, reject) => {
     User.find({ "userIdentity.email": { $in: emails } })
       .select("-__v")
       .exec(function (err, users) {
         if (err || !users) {
+          reject(err);
+        } else {
+          resolve(users);
+        }
+      });
+  });
+};
+//-------------------------------------------------------
+exports.findByPermissionLevel = (level) => {
+  return new Promise((resolve, reject) => {
+    User.find({ permissionLevel: level })
+      .select("-__v")
+      .exec(function (err, users) {
+        if (err || users.length === 0) {
           reject(err);
         } else {
           resolve(users);
@@ -181,4 +196,39 @@ exports.removeById = (userId) => {
       }
     });
   });
+};
+
+exports.addTournament = async (userId, tournamentId) => {
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+    user.tournamentIds = user.tournamentIds.filter((id) => id !== null);
+
+    user.tournamentIds.push(tournamentId);
+
+    await user.save();
+
+    console.log("Tournament added to user:", user);
+
+    return user;
+  } catch (error) {
+    console.error("Error adding tournament to user:", error);
+    throw error;
+  }
+};
+exports.getTournaments = async (id) => {
+  try {
+    const user = await User.find({ _id: id }).populate({
+      path: "tournamentIds",
+      select: "name",
+    });
+
+    return user;
+  } catch (error) {
+    console.error("Error fetching user tournaments:", error);
+    throw error;
+  }
 };

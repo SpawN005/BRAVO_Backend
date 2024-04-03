@@ -1,10 +1,4 @@
 const mongoose = require("mongoose");
-const teamSchema = require("./team");
-const userSchema = require("./users");
-const stadiumSchema = require("./stadium");
-const playerSchema = require("./players");
-
-const matchStatSchema = require("./matchStats"); // Import matchStat schema
 
 const matchSchema = new mongoose.Schema({
   date: {
@@ -20,10 +14,14 @@ const matchSchema = new mongoose.Schema({
     type: String, // "group" or "knockout"
     required: true,
   },
+  round: {
+    type: Number,
+    required: true,
+  },
   team1: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Teams",
-    required: true,
+    // required: true,
   },
   statsTeam1: {
     type: mongoose.Schema.Types.ObjectId,
@@ -32,7 +30,7 @@ const matchSchema = new mongoose.Schema({
   team2: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Teams",
-    required: true,
+    // required: true,
   },
   statsTeam2: {
     type: mongoose.Schema.Types.ObjectId,
@@ -42,15 +40,38 @@ const matchSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Stadiums",
   },
-
   observer: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users", // Reference to User model
+    ref: "Users",
   },
   referee: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users", // Reference to User model
+    ref: "Users",
   },
+  isWinner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Teams",
+  },
+  nextMatch: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Matches",
+  },
+  round: {
+    type: Number,
+  },
+  status: {
+    type: String,
+    default: "UPCOMING",
+  },
+});
+matchSchema.pre("save", function (next) {
+  const currentDate = new Date();
+  if (this.date < currentDate) {
+    this.status = "FINISHED";
+  } else {
+    this.status = "UPCOMING";
+  }
+  next();
 });
 
 module.exports = mongoose.model("Matches", matchSchema);

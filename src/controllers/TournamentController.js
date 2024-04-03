@@ -1,6 +1,10 @@
 var TournamentModel = require("../models/tournament");
 var UsersModel = require("../models/users");
 var TeamModel = require("../models/team");
+const {
+  createGroupMatches,
+  createGroupKnockoutMatches,
+} = require("./match.controller");
 
 var TournamentsController = {
   insert: async function (req, res) {
@@ -18,7 +22,6 @@ var TournamentsController = {
       location: req.body.location,
       rules: req.body.rules,
       groups: req.body.groups,
-      matches: req.body.matches,
     };
 
     const teamsPerPool = tournamentData.rules.teamsPerPool;
@@ -30,6 +33,7 @@ var TournamentsController = {
 
         break;
       case "KNOCKOUT":
+        Tgroups = await TournamentModel.createGroups(req.body.teams, 2);
         break;
       case "GROUP_KNOCKOUT":
         Tgroups = await TournamentModel.createGroups(
@@ -47,6 +51,13 @@ var TournamentsController = {
 
     try {
       await newTournament.save();
+      switch (tournamentData.rules.type) {
+        case "GROUP_KNOCKOUT":
+          await createGroupKnockoutMatches(newTournament._id);
+          break;
+        default:
+          await createGroupMatches(newTournament._id);
+      }
 
       res.status(201).send(newTournament);
     } catch (err) {
@@ -66,10 +77,12 @@ var TournamentsController = {
       res.status(200).send(tournaments);
     });
   },
-
   getById: function (req, res) {
     TournamentModel.findById(req.params.id)
-      .populate("groups.teams")
+      .populate({
+        path: "standings",
+        populate: { path: "team" }, // Assuming "team" is the field referencing teams in the standings document
+      })
       .exec(function (err, tournament) {
         if (err) {
           return res.status(500).send({
@@ -79,9 +92,14 @@ var TournamentsController = {
         if (!tournament) {
           return res.status(404).send({ message: "Tournament not found" });
         }
+
+        // Sort the standings by points in descending order
+        tournament.standings.sort((a, b) => b.points - a.points);
+
         res.status(200).send(tournament);
       });
   },
+
   getByIdOwner: async function (req, res) {
     try {
       const ownerId = req.params.id;

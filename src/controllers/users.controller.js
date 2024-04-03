@@ -174,7 +174,61 @@ exports.getObserversByTournamentId = (req, res) => {
       })
     );
 };
-
+exports.getObservers = (req, res) => {
+  UserModel.findByPermissionLevel(2)
+    .then((users) => {
+      const observers = users;
+      console.log("observers", observers);
+      if (observers.length > 0) {
+        res.status(200).send({
+          code: 200,
+          status: "success",
+          data: observers,
+        });
+      } else {
+        res.status(404).send({
+          code: 404,
+          status: "not found",
+          message: "No observers found ",
+        });
+      }
+    })
+    .catch((error) =>
+      res.status(500).send({
+        code: 500,
+        status: "error",
+        message: "An error occurred while fetching observers",
+        error: error,
+      })
+    );
+};
+exports.getReferees = (req, res) => {
+  UserModel.findByPermissionLevel(1)
+    .then((users) => {
+      const Referees = users;
+      if (Referees.length > 0) {
+        res.status(200).send({
+          code: 200,
+          status: "success",
+          data: Referees,
+        });
+      } else {
+        res.status(404).send({
+          code: 404,
+          status: "not found",
+          message: "No Referees found ",
+        });
+      }
+    })
+    .catch((error) =>
+      res.status(500).send({
+        code: 500,
+        status: "error",
+        message: "An error occurred while fetching Referees",
+        error: error,
+      })
+    );
+};
 exports.getRefereesByTournamentId = (req, res) => {
   UserModel.findByTournamentId(req.params.tournamentId)
     .then((users) => {
@@ -228,5 +282,73 @@ const sendPasswordEmail = async (email, password) => {
     console.log("Email sent:", info.response);
   } catch (error) {
     console.error("Error sending email:", error);
+  }
+};
+exports.addTournament = (req, res) => {
+  console.log(req.params.userId);
+
+  UserModel.addTournament(req.params.userId, req.body.tournamentId)
+    .then((user) => {
+      console.log(user);
+      if (!user) {
+        return res.status(404).send({
+          code: 404,
+          status: "not found",
+          message: "User not found",
+        });
+      }
+    })
+    .then(() => {
+      res.status(200).send({
+        code: 200,
+        status: "success",
+        message: "Tournament added to user",
+      });
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+
+      // Handle different types of errors appropriately
+      if (error.name === "CastError") {
+        return res.status(400).send({
+          code: 400,
+          status: "bad request",
+          message: "Invalid user ID",
+        });
+      }
+
+      res.status(500).send({
+        code: 500,
+        status: "error",
+        message: "An error occurred while processing the request",
+        error: error.message, // Send only the error message for security reasons
+      });
+    });
+};
+exports.getTournaments = async (req, res) => {
+  try {
+    const user = await UserModel.getTournaments(req.params.userId);
+
+    if (!user) {
+      return res.status(404).send({
+        code: 404,
+        status: "not found",
+        message: "User not found, retry with a valid userId",
+      });
+    }
+
+    res.status(200).send({
+      code: 200,
+      status: "success",
+      data: user,
+    });
+  } catch (error) {
+    console.error("Error fetching user tournaments:", error);
+    res.status(500).send({
+      code: 500,
+      status: "error",
+      message: "An error occurred while fetching user tournaments",
+      error: error.message,
+    });
   }
 };
