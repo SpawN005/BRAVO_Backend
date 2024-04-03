@@ -197,7 +197,7 @@ router.get("/:teamId", async (req, res) => {
 router.post("/update-score", async (req, res) => {
   try {
     // Add logic to update the score
-    const updatedScore = await MatchController.updateScore(req.body);
+    const updatedScore = await MatchController.updatedScore(req.body);
 
     // Emit an event to notify clients about the updated score
     io.emit("scoreUpdated", { updatedScore });

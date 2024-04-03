@@ -2,7 +2,7 @@ var UsersController = require("../../controllers/users.controller");
 var PermissionMiddleware = require("../../middlewares/permissions/permissions.middleware");
 var ValidationMiddleware = require("../../middlewares/validation/validation.middleware");
 
-const initializePatchRoutes = app => {
+const initializePatchRoutes = (app) => {
   /**
    * @swagger
    * /users/{userId}:
@@ -30,9 +30,8 @@ const initializePatchRoutes = app => {
    *       404:
    *         description: User not found
    */
-  app.patch("/users/:userId", [
-    UsersController.patchById
-  ]);
+  app.patch("/users/:userId", [UsersController.patchById]);
+  app.patch("/users/addTournament/:userId", [UsersController.addTournament]);
 };
 
 module.exports = initializePatchRoutes;

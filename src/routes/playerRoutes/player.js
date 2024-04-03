@@ -6,7 +6,7 @@ const validate = require('../../middlewares/validation/validators');
 
 router.get('/', PlayerController.getAllPlayers);
 router.get('/:id', PlayerController.getPlayerById);
-router.post('/', upload.single('logo'),PlayerController.createPlayer);
+router.post('/', PlayerController.createPlayer);
 router.delete('/:id', PlayerController.destroy);
 router.put('/:id', PlayerController.updatePlayerById);
 router.post('/assign/:teamId', PlayerController.assignPlayerToTeam);
