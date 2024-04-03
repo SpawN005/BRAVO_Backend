@@ -13,37 +13,35 @@ exports.insert = (req, res) => {
         message: "Email already exists",
       });
     })
-    .catch(() => {
-      let permissionLevel = req.body.permissionLevel;
-      // Generate a random password for permission levels 1, 2, or 3
-      if ([1, 2, 3].includes(permissionLevel)) {
-        const randomPassword = generateRandomPassword();
-        console.log(
-          `Generated password for ${req.body.email}: ${randomPassword}`
-        );
-        //Placeholder for sending email - to be implemented later
-        //sendPasswordEmail(req.body.email, randomPassword);
 
-        let salt = crypto.randomBytes(16).toString("base64");
-        let hash = crypto
-          .createHmac("sha512", salt)
-          .update(randomPassword)
-          .digest("base64");
-        req.body.password = salt + "$" + hash;
-      } else {
+
+    .catch(() => {
+     // Map roles to permission levels
+     const rolePermissionMapping = {
+      'OBSERVER': 1,
+      'REFEREE': 2,
+      'MANAGER': 3,
+      'ORGANIZER': 4
+    };
+    
+    let permissionLevel = rolePermissionMapping[req.body.role] || req.body.permissionLevel;
+
+
         let salt = crypto.randomBytes(16).toString("base64");
         let hash = crypto
           .createHmac("sha512", salt)
           .update(req.body.password)
           .digest("base64");
         req.body.password = salt + "$" + hash;
-      }
-
+      
+      console.log(req.body)
+      console.log(permissionLevel)
       let newUser = {
         userIdentity: req.body,
         permissionLevel: permissionLevel,
-        tournamentIds: [req.body.tournamentId], // Add tournamentId to the array
       };
+
+      
       UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
           result = result.toJSON();
@@ -62,6 +60,7 @@ exports.insert = (req, res) => {
               message: "Invalid user object",
             });
       });
+      
     });
 };
 
