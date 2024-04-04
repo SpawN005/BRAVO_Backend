@@ -17,8 +17,7 @@ async function getMatchesByTeamId(teamId) {
     throw error;
   }
 }
-
-const getMatchById = async (matchId) => {
+const getMatch = async (matchId) => {
   try {
     // Find the match by ID
     const match = await Match.findById(matchId);
@@ -35,6 +34,65 @@ const getMatchById = async (matchId) => {
     };
   }
 };
+const getMatchById = async (matchId) => {
+  try {
+    // Find the match by ID
+    const match = await Match.findById(matchId);
+
+    if (!match) {
+      throw { status: 404, message: "Match not found" };
+    }
+
+    // Find the teams by their IDs
+    const team1 = await Team.findById(match.team1);
+    const team2 = await Team.findById(match.team2);
+    const team1p = await Team.findById(match.team1).populate("lineup");
+    const team2p = await Team.findById(match.team2).populate("lineup");
+    const team2s = await MatchStats.findById(match.statsTeam1);
+    const team1s = await MatchStats.findById(match.statsTeam1);
+
+    const team1Stats = await MatchStats.findOne({
+      match: matchId,
+      team: match.team1,
+    });
+    const team2Stats = await MatchStats.findOne({
+      match: matchId,
+      team: match.team2,
+    });
+
+    if (!team1 || !team2) {
+      throw { status: 404, message: "One or more teams not found" };
+    }
+
+    // Add the team names to the match object
+    const matchWithTeamNames = {
+      ...match.toObject(),
+      team1Name: team1.name,
+      team2Name: team2.name,
+      team1s,
+      team2s,
+      team1p,
+      team2p,
+      team1: {
+        ...team1.toObject(),
+        stats: team1Stats.toObject(),
+      },
+      team2: {
+        ...team2.toObject(),
+        stats: team2Stats.toObject(),
+      },
+    };
+
+    return matchWithTeamNames;
+  } catch (error) {
+    console.error("Error getting match by ID:", error);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
+  }
+};
+
 const updateMatchDateById = async (matchId, newDate) => {
   try {
     // Find the match by ID and update its date
@@ -132,82 +190,6 @@ const getAllTeamsInTournament = async (tournamentId) => {
   } catch (error) {
     console.error("Error getting teams in tournament:", error.message);
     throw { status: 500, message: "Internal Server Error" };
-  }
-};
-
-const createMatch = async ({
-  team1,
-  team2,
-  tournament,
-  date,
-  stage,
-  lineup,
-  stadium,
-  referee,
-  observer,
-}) => {
-  try {
-    // Check if a value is provided for date and convert it to Date type
-    const matchDate = date ? new Date(date) : null;
-
-    // Create new match stats for each team
-    const matchStatsTeam1 = await MatchStats.create({
-      redCards: [],
-      yellowCards: [],
-      assisters: [],
-      scorers: [],
-      score: null,
-    });
-
-    const matchStatsTeam2 = await MatchStats.create({
-      redCards: [],
-      yellowCards: [],
-      assisters: [],
-      scorers: [],
-      score: null,
-    });
-
-    // Create a new match document with provided values or defaults (null or 0)
-    const newMatch = await Match.create({
-      team1: {
-        _id: team1._id,
-      },
-      statsTeam1: matchStatsTeam1._id, // Use distinct name for team1's stats
-
-      team2: {
-        _id: team2._id,
-      },
-      statsTeam2: matchStatsTeam2._id, // Use distinct name for team2's stats
-
-      tournament: tournament,
-      date: matchDate,
-      stage: stage || null,
-      lineup: lineup || [],
-      stadium: stadium ? stadium._id : null,
-      referee: referee || null,
-      observer: observer || null,
-    });
-
-    // Assign the match reference to matchStatsTeam1 and matchStatsTeam2
-    matchStatsTeam1.match = newMatch._id;
-    matchStatsTeam2.match = newMatch._id;
-    matchStatsTeam1.team = newMatch.team1;
-    matchStatsTeam2.team = newMatch.team2;
-
-    // Save the updated match stats with match references
-    await Promise.all([matchStatsTeam1.save(), matchStatsTeam2.save()]);
-
-    // Populate the 'stats' field for team1 and team2
-    const populatedMatch = await Match.findById(newMatch._id)
-      .populate({ path: "team1.statsTeam1", model: "MatchStats" })
-      .populate({ path: "team2.statsTeam2", model: "MatchStats" })
-      .exec();
-
-    console.log(populatedMatch);
-    return populatedMatch;
-  } catch (error) {
-    console.error("Error creating match:", error);
-    throw error;
   }
 };
 
@@ -403,6 +385,20 @@ const getBracketForTournament = async (tournamentId) => {
   }
 };
 
+const getLiveMatches = async () => {
+  try {
+    const liveMatches = await Match.find({ status: "live" }).populate(
+      "team1 team2"
+    );
+    return liveMatches;
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des matchs en direct :",
+      error
+    );
+    throw new Error("Erreur lors de la récupération des matchs en direct.");
+  }
+};
 const getMatchesByUserId = async (userId) => {
   try {
     const matches = await Match.find({
@@ -580,4 +576,6 @@ module.exports = {
   getBracketForTournament,
   patchTMatchById,
   getMatchesByTeamId,
+  getMatch,
+  getLiveMatches,
 };

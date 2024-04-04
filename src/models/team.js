@@ -19,15 +19,15 @@ const teamSchema = new mongoose.Schema({
   },
   win: {
     type: Number,
-    default: 0  
+    default: 0,
   },
   lose: {
     type: Number,
-    default: 0  
+    default: 0,
   },
-  nul:{
+  nul: {
     type: Number,
-    default: 0  
+    default: 0,
   },
   players: [
     {
@@ -38,12 +38,13 @@ const teamSchema = new mongoose.Schema({
   matches: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref:"Matches",
+      ref: "Matches",
     },
   ],
   score: {
     type: Number,
-    default: 0    },
+    default: 0,
+  },
   logo: {
     type: String,
   },

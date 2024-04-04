@@ -87,6 +87,21 @@ router.get("/matches/:tournamentId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
+router.get("/team/:teamId", async (req, res) => {
+  try {
+    const teamId = req.params.teamId;
+
+    // Call the controller method to get all matches for the specified tournament ID
+    const matches = await MatchController.getMatch(teamId);
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
 router.get("/bracket/:tournamentId", async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
@@ -106,7 +121,7 @@ router.get("/bracket/:tournamentId", async (req, res) => {
 router.get("/:matchId", async (req, res) => {
   try {
     const matchId = req.params.matchId;
-
+    console.log(matchId);
     const match = await MatchController.getMatchById(matchId);
 
     try {
@@ -266,6 +281,20 @@ router.get("/user/:userId", async (req, res) => {
     res
       .status(error.status || 500)
       .json({ message: error.message || "Internal Server Error" });
+  }
+});
+router.get("/", async (req, res) => {
+  try {
+    const liveMatches = await MatchController.getLiveMatches();
+    res.status(200).json(liveMatches);
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des matchs en direct :",
+      error
+    );
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des matchs en direct." });
   }
 });
 

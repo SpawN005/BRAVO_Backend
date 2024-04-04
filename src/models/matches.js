@@ -14,10 +14,7 @@ const matchSchema = new mongoose.Schema({
     type: String, // "group" or "knockout"
     required: true,
   },
-  round: {
-    type: Number,
-    required: true,
-  },
+
   team1: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Teams",
