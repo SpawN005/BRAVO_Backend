@@ -48,14 +48,33 @@ io.on('connection', (socket) => {
 
   socket.on('goalScored', async (data) => {
     // Call the scoreGoal function to update match stats
-    const updatedStats = await matchStatController.scoreGoal(data.matchId, data.playerId1, data.playerId2, data.teamId);
+    const updatedStats = await matchStatController.scoreGoal(data.matchId, data.playerId1, data.teamId);
     
     // Emit the updated stats to all connected clients
     io.emit('updateMatchStats', updatedStats);
   });
 
-  
 });
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+  console.log('Client connected');
+
+  // Écouteur d'événement pour l'attribution d'un carton jaune
+  socket.on('yellowCardGiven', async (data) => {
+    try {
+      // Appeler la fonction addYellowCard pour mettre à jour les statistiques de match
+      const updatedCard = await matchStatController.addYellowCard(data.matchId, data.playerId, data.teamId);
+      
+      // Émettre les statistiques mises à jour à tous les clients connectés
+      io.emit('updateMatchCard', updatedCard);
+    } catch (error) {
+      console.error('Error adding yellow card:', error);
+      // Gérer l'erreur si nécessaire
+    }
+  });
+});
+
+
 
 // Start the server
 server.listen(port, () => {

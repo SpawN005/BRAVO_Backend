@@ -6,121 +6,111 @@ const Match = require('../models/matches');
 const MatchStats = require('../models/matchStats');
 const Player = require('../models/players');
 
+const getMatchStatsByMatchId = async (matchId,teamId1,teamId2) => {
+  try {
+    // Find the match stats for both teams by match ID
+    const matchStatsTeam1 = await MatchStats.findOne({ match: matchId, team:teamId1 }).populate(' yellowCards');
+    const matchStatsTeam2 = await MatchStats.findOne({ match: matchId, team:teamId2 }).populate(' yellowCards');
 
-  const scoreGoal = async (idmatch, idplayer1, idplayer2, idteam) => {
-    try {
-      // Find the match using matchId and populate team stats
-      const matchStats = await MatchStats.findById(idmatch)
-        .populate({
-          path: 'redCards yellowCards assisters scorers lineup',
-          populate: { path: 'player', model: 'Player' },
-        })
-        .exec();
-  
-      if (!matchStats) {
-        throw new Error('Match stats not found');
-      }
-  
-      let scoringTeamStats;
-  
-      // Check if idteam matches either team1 or team2
-      if (idteam && matchStats.team._id.toString() === idteam) {
-        scoringTeamStats = matchStats;
-      } else {
-        throw new Error('Invalid team ID provided');
-      }
-  
-      console.log('scoringTeamStats:', scoringTeamStats);
-  
-      // Ensure scoringTeamStats is an object before accessing 'score'
-      if (scoringTeamStats && typeof scoringTeamStats === 'object') {
-        // Update scoring team's score
-        scoringTeamStats.score = (scoringTeamStats.score || 0) + 1;
-  
-        // Update individual player's goals scored
-        const scorerPlayerId = idplayer1; // Replace with the actual scorer player ID
-  
-        // Check if the player is already in the scorers array
-        const existingScorer = scoringTeamStats.scorers.find(
-          (scorer) => scorer.player._id.toString() === scorerPlayerId
-        );
-  
-        if (existingScorer) {
-          // Player is already in the scorers array, update their goalsScored
-          existingScorer.goalsScored = (existingScorer.goalsScored || 0) + 1;
-  
-          // Save the updated goalsScored to the Player model
-         await Player.findByIdAndUpdate(
-            scorerPlayerId,
-            { $inc: { goalsScored: 1 } },
-            { new: true }
-          );
-        } else {
-          // Player is not in the scorers array, add them
-          scoringTeamStats.scorers.push({
-            player: scorerPlayerId,
-            goalsScored: 1,
-          });
-  
-          // Save the updated goalsScored to the Player model
-           await Player.findByIdAndUpdate(
-            scorerPlayerId,
-            { $inc: { goalsScored: 1 } },
-            { new: true }
-          );
-        }
-  
-        // Check if idplayer2 exists
-        if (idplayer2) {
-          // Update individual player's assist
-          const assisterPlayerId = idplayer2; // Replace with the actual assister player ID
-  
-          // Check if the player is already in the assisters array
-          const existingAssister = scoringTeamStats.assisters.find(
-            (assister) => assister.player._id.toString() === assisterPlayerId
-          );
-  
-          if (existingAssister) {
-            // Player is already in the assisters array, update their assist
-            existingAssister.assist = (existingAssister.assist || 0) + 1;
-  
-            // Save the updated assist to the Player model
-            const assisterPlayer = await Player.findByIdAndUpdate(
-              assisterPlayerId,
-              { $inc: { assist: 1 } },
-              { new: true }
-            );
-          } else {
-            // Player is not in the assisters array, add them
-            scoringTeamStats.assisters.push({
-              player: assisterPlayerId,
-              assist: 1,
-            });
-  
-            // Save the updated assists to the Player model
-            const assisterPlayer = await Player.findByIdAndUpdate(
-              assisterPlayerId,
-              { $inc: { assist: 1 } },
-              { new: true }
-            );
-          }
-        }
-  
-        console.log('Updated scoringTeamStats:', scoringTeamStats);
-  
-        // Save the updated matchStats document for the scoring team
-        await scoringTeamStats.save();
-
-        return (scoringTeamStats );
-      } else {
-        throw new Error('Invalid scoringTeamStats');
-      }
-    } catch (error) {
-      console.error(error);
-      throw new Error('Internal Server Error');
+    if (!matchStatsTeam1 || !matchStatsTeam2) {
+      throw { status: 404, message: 'Match stats not found' };
     }
-    
-  };
+
+    return { matchStatsTeam1, matchStatsTeam2 };
+  } catch (error) {
+    console.error('Error getting match stats by match ID:', error);
+    throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
+  }
+};
+
+
+
+
+const scoreGoal = async (idmatch, idplayer1, idteam) => {
+  try {
+    // Find the match using matchId and populate team stats
+    const matchStats = await MatchStats.findById(idmatch)
+      .populate({
+        path: 'redCards yellowCards assisters scorers lineup',
+        populate: { path: 'player', model: 'Player' },
+      })
+      .exec();
+
+    if (!matchStats) {
+      throw new Error('Match stats not found');
+    }
+
+    let scoringTeamStats;
+
+    // Check if idteam matches either team1 or team2
+    if (idteam && matchStats.team._id.toString() === idteam) {
+      scoringTeamStats = matchStats;
+    } else {
+      throw new Error('Invalid team ID provided');
+    }
+
+    console.log('scoringTeamStats:', scoringTeamStats);
+
+    // Ensure scoringTeamStats is an object before accessing 'score'
+    if (scoringTeamStats && typeof scoringTeamStats === 'object') {
+      // Update scoring team's score
+      scoringTeamStats.score = (scoringTeamStats.score || 0) + 1;
+
+      // Update individual player's goals scored
+      const scorerPlayerId = idplayer1; // Replace with the actual scorer player ID
+
+      // Check if the player is already in the scorers array
+      const existingScorer = scoringTeamStats.scorers.find(
+        (scorer) => scorer.player._id.toString() === scorerPlayerId
+      );
+
+      if (existingScorer) {
+        // Player is already in the scorers array, update their goalsScored
+        existingScorer.goalsScored = (existingScorer.goalsScored || 0) + 1;
+
+        // Save the updated goalsScored to the Player model
+       await Player.findByIdAndUpdate(
+          scorerPlayerId,
+          { $inc: { goalsScored: 1 } },
+          { new: true }
+        );
+      } else {
+        const player = await Player.findById(scorerPlayerId);
+        if (!player) {
+          throw new Error('Player not found');
+        }
+        // Player is not in the scorers array, add them
+        scoringTeamStats.scorers.push({
+          firstName:player.firstName,
+          player: scorerPlayerId,
+          goalsScored: 1,
+        });
+
+        // Save the updated goalsScored to the Player model
+         await Player.findByIdAndUpdate(
+          scorerPlayerId,
+          { $inc: { goalsScored: 1 } },
+          { new: true }
+        );
+      }
+
+      
+
+      console.log('Updated scoringTeamStats:', scoringTeamStats);
+
+      // Save the updated matchStats document for the scoring team
+      await scoringTeamStats.save();
+
+      return (scoringTeamStats );
+    } else {
+      throw new Error('Invalid scoringTeamStats');
+    }
+  } catch (error) {
+    console.error(error);
+    throw new Error('Internal Server Error');
+  }
+  
+};
   
   
   const assistOnly = async (idmatch, idplayer, idteam) => {
@@ -203,8 +193,29 @@ const Player = require('../models/players');
     }
   };
   
+  const getMatch = async (matchId) => {
+    try {
+      // Find the match stats directly based on matchId and teamId
+      const matchStats = await MatchStats.find({ match: matchId })
+        .populate({
+          path: 'redCards yellowCards assisters scorers lineup',
+          populate: { path: 'player', model: 'Player' },
+        })
+        .exec();
   
+      if (!matchStats) {
+        throw new Error('Match stats not found');
+      }
 
+      return matchStats;
+    } catch (error) {
+      console.error('Error getting match stats:', error);
+      throw error;
+    }
+  };
+  
+  
+  
   const getMatchStats = async (matchId, teamId) => {
     try {
       // Find the match stats directly based on matchId and teamId
@@ -226,6 +237,8 @@ const Player = require('../models/players');
     }
   };
   const updateTeamWin = async (matchId, teamId1, teamId2) => {
+    await Match.updateOne({ _id: matchId }, { status: "FINISH" });
+
     try {
         // Récupérer les statistiques du match pour chaque équipe
         const matchStatsTeam1 = await getMatchStats(matchId, teamId1);
@@ -251,7 +264,6 @@ const Player = require('../models/players');
           await Team.updateOne({ _id: teamId1 }, { $inc: { nul: 1 } });
 
       }
-      await Match.updateOne({ _id: matchId }, { status: false });
 
         
         console.log('Team win updated successfully');
@@ -262,12 +274,40 @@ const Player = require('../models/players');
 };
 const startMatch = async (matchId) => {
   try {
-      await Match.updateOne({ _id: matchId }, { status: true });
+    // Update match status
+    await Match.updateOne({ _id: matchId }, { status: "LIVE" });
 
-      console.log('Match status updated successfully');
+    // Fetch the match details to get team information
+    const match = await Match.findById(matchId);
+    const team1 = match.team1;
+    const team2 = match.team2;
+
+    // Create MatchStats documents for each team
+    const matchStatsTeam1 = await MatchStats.create({
+      match:match,
+      team: team1,
+      redCards: [],
+      yellowCards: [],
+      assisters: [],
+      scorers: [],
+      score: null,
+    });
+
+    const matchStatsTeam2 = await MatchStats.create({
+      match: match,
+      team: team2,
+      redCards: [],
+      yellowCards: [],
+      assisters: [],
+      scorers: [],
+      score: null,
+    });
+
+    console.log('Match status updated successfully');
+    console.log('Match stats created successfully for teams:', team1, 'and', team2);
   } catch (error) {
-      console.error('Error updating match status:', error);
-      throw error;
+    console.error('Error updating match status or creating match stats:', error);
+    throw error;
   }
 };
   const cancelGoal = async (idmatch, idplayer1, idplayer2, idteam) => {
@@ -394,8 +434,6 @@ const startMatch = async (matchId) => {
         })
         .exec();
   
-      console.log(matchStats);
-  
       if (!matchStats) {
         throw new Error('Match stats not found');
       }
@@ -422,7 +460,11 @@ const startMatch = async (matchId) => {
         existingPlayer.yellowCards += 1;
       } else {
         // Player is not in the yellowCards array, add them
-        teamStats.yellowCards.push({ player: playerId, yellowCards: 1 });
+        const player = await Player.findById(playerId);
+        if (!player) {
+          throw new Error('Player not found');
+        }
+        teamStats.yellowCards.push({ player: playerId, firstName: player.firstName, yellowCards: 1 });
       }
   
       // Save the updated yellowCards to the Player model
@@ -434,15 +476,20 @@ const startMatch = async (matchId) => {
   
       // Save the updated matchStats document
       await teamStats.save();
-      
+  
+      console.log(teamStats);
+      const player = await Player.findById(playerId);
 
-      return { "taaa":teamStats };
-
+    console.log(player.firstName);
+      x=player.firstName;
+      return player.firstName; 
+  
     } catch (error) {
       console.error(error);
       throw new Error('Internal Server Error');
     }
   };
+  
 
   const addRedCard = async (idmatch, idplayer, idteam) => {
     try {
@@ -501,68 +548,9 @@ const startMatch = async (matchId) => {
       throw new Error('Internal Server Error');
     }
   };
-  const lineupMaking = async (matchId, idTeam, players) => {
-    try {
-      console.log(matchId, idTeam,players )
-      // Find the match using matchId and populate team stats
-      const matchStats = await MatchStats.findOne({ match: matchId, team: idTeam })
-        .populate({
-          path: 'redCards yellowCards assisters scorers lineup',
-          populate: { path: 'player', model: 'Players' },
-        })
-        .exec(); 
-        console.log(matchStats);
-
-
-      if (!matchStats) {
-        throw new Error('Match stats not found');
-      }
-    
-      // Update the lineup in the match stats
-      matchStats.lineup = players.map(playerId => ({ player: playerId }));
+ 
   
-      // Save the updated matchStats document
-      await matchStats.save();
-  
-      return { message: 'Lineup updated successfully' };
-    } catch (error) {
-      console.error(error);
-      throw new Error('Internal Server Error');
-    }
-  };
-  
-  const getFormattedLineup = async (matchId, teamId) => {
-    try {
-      const matchStats = await MatchStats.findOne({ match: matchId, team: teamId });
-  
-      if (!matchStats) {
-        throw new Error('Match stats not found');
-      }
-  
-      // Populate player details for each ID in the lineup
-      const populatedLineup = await Promise.all(
-        matchStats.lineup.map(async (playerId) => {
-          const player = await Player.findById(playerId);
-          if (player) {
-            return {
-              _id: player._id,
-              firstName: player.firstName,
-              lastName: player.lastName,
-              // Include other fields from the playerSchema as required
-            };
-          } else {
-            // Handle the case where the player is not found
-            return { message: `Player with ID ${playerId} not found` };
-          }
-        })
-      );
-  
-      return populatedLineup.filter(player => player != null);
-    } catch (error) {
-      console.error('Error fetching lineup:', error);
-      throw new Error('Internal Server Error');
-    }
-  };
+ 
 
   module.exports = {
     scoreGoal,
@@ -570,11 +558,11 @@ const startMatch = async (matchId) => {
     cancelGoal,
     addYellowCard,
     addRedCard,
-    lineupMaking,
-    getFormattedLineup,
     updateTeamWin,
     assistOnly,
-    startMatch
+    startMatch,
+    getMatch,
+    getMatchStatsByMatchId
   };
   
   

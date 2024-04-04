@@ -100,6 +100,7 @@ router.get('/:matchId', async (req, res) => {
   }
 });
 
+
 router.patch('update-date/:matchId', async (req, res) => {
   try {
     const matchId = req.params.matchId;
@@ -163,6 +164,15 @@ router.get('/user/:userId', async (req, res) => {
   } catch (error) {
     console.error('Error fetching matches for user:', error);
     res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+router.get("/", async (req, res) => {
+  try {
+      const liveMatches = await MatchController.getLiveMatches();
+      res.status(200).json(liveMatches);
+  } catch (error) {
+      console.error("Erreur lors de la récupération des matchs en direct :", error);
+      res.status(500).json({ error: "Erreur lors de la récupération des matchs en direct." });
   }
 });
 

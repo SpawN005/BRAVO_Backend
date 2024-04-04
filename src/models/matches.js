@@ -52,8 +52,8 @@ const matchSchema = new mongoose.Schema({
     ref: "Users", 
   },
   status:{
-    type:Boolean,
-    default: false
+    type: String,
+    default: "UPCOMING",
   },
   isWinner:{
     type: mongoose.Schema.Types.ObjectId,

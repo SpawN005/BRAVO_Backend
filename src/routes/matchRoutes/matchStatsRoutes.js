@@ -74,9 +74,21 @@ router.post('/red-card/:matchId', async (req, res) => {
   }
 });
 
+router.get('/matches/:matchId/stat', async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const { teamId1, teamId2 } = req.body;
+
+    const matchStats = await matchStatController.getMatchStatsByMatchId(matchId,teamId1,teamId2);
+    res.status(200).json(matchStats);
+  } catch (error) {
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
 
 router.post('/lineup/:matchId', async (req, res) => {
-  try {
+  try { 
     const idmatch = req.params.matchId;
     const { idteam, players } = req.body;
     const result = await matchStatController.lineupMaking(idmatch, idteam, players);
@@ -93,6 +105,19 @@ router.get('/:matchId/:teamId', async (req, res) => {
 
     // Call the controller method to get the match by ID
     const match = await matchStatController.getMatchStats(matchId,teamId);
+
+    res.status(200).json(match);
+  } catch (error) {
+    console.error('Error getting match by ID:', error);
+    res.status(error.status || 500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+router.get('/:matchId', async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+
+    // Call the controller method to get the match by ID
+    const match = await matchStatController.getMatchStats(matchId);
 
     res.status(200).json(match);
   } catch (error) {

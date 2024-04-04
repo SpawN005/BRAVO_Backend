@@ -24,7 +24,8 @@ const Tournament = require('../models/tournament');
 
 
 
- const getMatchById = async (matchId) => {
+
+const getMatchById = async (matchId) => {
   try {
     // Find the match by ID
     const match = await Match.findById(matchId);
@@ -36,8 +37,10 @@ const Tournament = require('../models/tournament');
     // Find the teams by their IDs
     const team1 = await Team.findById(match.team1);
     const team2 = await Team.findById(match.team2);
-    const team1p = await Team.findById(match.team1).populate("players"); 
+    const team1p = await Team.findById(match.team1).populate("lineup"); 
     const team2p = await Team.findById(match.team2).populate("lineup"); 
+    const team2s = await MatchStats.findById(match.statsTeam1); 
+    const team1s = await MatchStats.findById(match.statsTeam1); 
 
     const team1Stats = await MatchStats.findOne({ match: matchId, team: match.team1 });
     const team2Stats = await MatchStats.findOne({ match: matchId, team: match.team2 });
@@ -51,6 +54,8 @@ const Tournament = require('../models/tournament');
       ...match.toObject(), 
       team1Name: team1.name,
       team2Name: team2.name,
+      team1s,
+      team2s,
       team1p,
       team2p,
       team1: {
@@ -69,6 +74,8 @@ const Tournament = require('../models/tournament');
     throw { status: error.status || 500, message: error.message || 'Internal Server Error' };
   }
 };
+
+
 const updateMatchDateById = async (matchId, newDate) => {
   try {
     // Find the match by ID and update its date
@@ -388,6 +395,15 @@ const createGroupMatches = async (tournamentId) => {
       throw { status: 500, message: 'Internal Server Error' };
     }
   };
+  const getLiveMatches = async () => {
+    try {
+        const liveMatches = await Match.find({ status: "FINISH" }).populate('team1 team2');
+        return liveMatches;
+    } catch (error) {
+        console.error("Erreur lors de la récupération des matchs en direct :", error);
+        throw new Error("Erreur lors de la récupération des matchs en direct.");
+    }
+};
   
 
 
@@ -402,5 +418,7 @@ module.exports = {
   getMatchById,
   updateMatchDateById,
   getMatchesByUserId,
-  getMatchesByTeamId
+  getMatchesByTeamId,
+  getLiveMatches,
+  
 };

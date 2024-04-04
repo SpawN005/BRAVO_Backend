@@ -10,9 +10,7 @@ const teamSchema = new mongoose.Schema({
   name: {
     type: String,
   },
-  name: {
-    type: String,
-  },
+ 
   country: {
     type: String,
   },
