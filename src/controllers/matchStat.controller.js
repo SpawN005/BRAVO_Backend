@@ -336,7 +336,7 @@ const updateTeamWin = async (match) => {
         break;
       case "KNOCKOUT":
         const nextM = await Match.findById(match.nextMatch);
-
+        console.log(nextM);
         if (nextM) {
           if (!nextM.team1) {
             await Match.findByIdAndUpdate(nextM._id, { team1: match.isWinner });
