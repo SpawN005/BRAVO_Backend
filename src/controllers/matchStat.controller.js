@@ -8,9 +8,12 @@ const Player = require('../models/players');
 
 const getMatchStatsByMatchId = async (matchId,teamId1,teamId2) => {
   try {
+    const match = await Match.findById(matchId);
+    const team1 = match.team1;
+    const team2 = match.team2;
     // Find the match stats for both teams by match ID
-    const matchStatsTeam1 = await MatchStats.findOne({ match: matchId, team:teamId1 }).populate(' yellowCards');
-    const matchStatsTeam2 = await MatchStats.findOne({ match: matchId, team:teamId2 }).populate(' yellowCards');
+    const matchStatsTeam1 = await MatchStats.findOne({ match: matchId, team:teamId1 }).populate('yellowCards');
+    const matchStatsTeam2 = await MatchStats.findOne({ match: matchId, team:teamId2 }).populate('scorers yellowCards');
 
     if (!matchStatsTeam1 || !matchStatsTeam2) {
       throw { status: 404, message: 'Match stats not found' };
@@ -275,36 +278,9 @@ const scoreGoal = async (idmatch, idplayer1, idteam) => {
 const startMatch = async (matchId) => {
   try {
     // Update match status
-    await Match.updateOne({ _id: matchId }, { status: "LIVE" });
-
-    // Fetch the match details to get team information
-    const match = await Match.findById(matchId);
-    const team1 = match.team1;
-    const team2 = match.team2;
-
-    // Create MatchStats documents for each team
-    const matchStatsTeam1 = await MatchStats.create({
-      match:match,
-      team: team1,
-      redCards: [],
-      yellowCards: [],
-      assisters: [],
-      scorers: [],
-      score: null,
-    });
-
-    const matchStatsTeam2 = await MatchStats.create({
-      match: match,
-      team: team2,
-      redCards: [],
-      yellowCards: [],
-      assisters: [],
-      scorers: [],
-      score: null,
-    });
+    await Match.updateOne({ _id: matchId }, { status: "LIVE" })
 
     console.log('Match status updated successfully');
-    console.log('Match stats created successfully for teams:', team1, 'and', team2);
   } catch (error) {
     console.error('Error updating match status or creating match stats:', error);
     throw error;
@@ -542,7 +518,10 @@ const startMatch = async (matchId) => {
       // Save the updated matchStats document
       await teamStats.save();
   
-      return { message: 'Yellow card added successfully' };
+      const player = await Player.findById(playerId);
+
+    console.log(player.firstName);
+      return player.firstName;
     } catch (error) {
       console.error(error);
       throw new Error('Internal Server Error');

@@ -73,7 +73,23 @@ io.on('connection', (socket) => {
     }
   });
 });
+io.on('connection', (socket) => {
+  console.log('Client connected');
 
+  // Écouteur d'événement pour l'attribution d'un carton jaune
+  socket.on('redCardGiven', async (data) => {
+    try {
+      // Appeler la fonction addYellowCard pour mettre à jour les statistiques de match
+      const updatedCardred = await matchStatController.addRedCard(data.matchId, data.playerId, data.teamId);
+      
+      // Émettre les statistiques mises à jour à tous les clients connectés
+      io.emit('updateMatchCardred', updatedCardred);
+    } catch (error) {
+      console.error('Error adding red card:', error);
+      // Gérer l'erreur si nécessaire
+    }
+  });
+});
 
 
 // Start the server

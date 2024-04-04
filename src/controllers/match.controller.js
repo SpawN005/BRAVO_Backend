@@ -397,7 +397,7 @@ const createGroupMatches = async (tournamentId) => {
   };
   const getLiveMatches = async () => {
     try {
-        const liveMatches = await Match.find({ status: "FINISH" }).populate('team1 team2');
+        const liveMatches = await Match.find({ status: "live" }).populate('team1 team2');
         return liveMatches;
     } catch (error) {
         console.error("Erreur lors de la récupération des matchs en direct :", error);
