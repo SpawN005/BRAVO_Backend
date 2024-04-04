@@ -14,24 +14,45 @@ exports.insert = (req, res) => {
       });
     })
     .catch(() => {
-     // Map roles to permission levels
-     const rolePermissionMapping = {
-      'OBSERVER': 1,
-      'REFEREE': 2,
-      'MANAGER': 3,
-      'ORGANIZER': 4
-    };
-    let permissionLevel = rolePermissionMapping[req.body.role] || req.body.permissionLevel;
-        let salt = crypto.randomBytes(16).toString("base64");
-        let hash = crypto
-          .createHmac("sha512", salt)
-          .update(req.body.password)
-          .digest("base64");
-        req.body.password = salt + "$" + hash;
-      let newUser = {
-        userIdentity: req.body,
-        permissionLevel: permissionLevel,
+      const rolePermissionMapping = {
+        'OBSERVER': 1,
+        'REFEREE': 2,
+        'MANAGER': 3,
+        'ORGANIZER': 4
       };
+
+      // Determine permission level either from the role or directly from the request
+      let permissionLevel = req.body.role 
+        ? rolePermissionMapping[req.body.role.toUpperCase()] 
+        : req.body.permissionLevel;
+
+      let passwordToHash = req.body.password;
+
+      // If the role leads to permission level 1 or 2, or it's set directly, generate a random password
+      if (!passwordToHash && [1, 2].includes(permissionLevel)) {
+        const randomPassword = generateRandomPassword();
+        console.log(`Generated password for ${req.body.email}: ${randomPassword}`);
+        // sendPasswordEmail(req.body.email, randomPassword); // Implement this function as needed
+
+        passwordToHash = randomPassword;
+      }
+
+      // Hash the password
+      let salt = crypto.randomBytes(16).toString("base64");
+      let hash = crypto.createHmac("sha512", salt).update(passwordToHash).digest("base64");
+      req.body.password = salt + "$" + hash;
+
+      let newUser = {
+        userIdentity: {
+          email: req.body.email,
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          password: req.body.password
+        },
+        permissionLevel: permissionLevel,
+        tournamentIds: req.body.tournamentId ? [req.body.tournamentId] : []
+      };
+
       UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
           result = result.toJSON();
@@ -50,9 +71,11 @@ exports.insert = (req, res) => {
               message: "Invalid user object",
             });
       });
-      
     });
 };
+
+
+
 
 //-------------------------------------------------------------
 // Fetching by Id
@@ -233,7 +256,7 @@ exports.getRefereesByTournamentId = (req, res) => {
   UserModel.findByTournamentId(req.params.tournamentId)
     .then((users) => {
       // Filter users by permissionLevel
-      const referees = users.filter((user) => user.permissionLevel === 3);
+      const referees = users.filter((user) => user.permissionLevel === 2);
       console.log(referees);
       if (referees.length > 0) {
         res.status(200).send({
