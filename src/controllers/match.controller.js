@@ -1,9 +1,10 @@
 const Tournament = require("../models/tournament");
-
+const MatchStatController = require("../controllers/matchStat.controller");
 const Team = require("../models/team");
 const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
+const matchStats = require("../models/matchStats");
 
 // Initialize Socket.IO instance (assuming you have already created an HTTP server)
 async function getMatchesByTeamId(teamId) {
@@ -18,10 +19,11 @@ async function getMatchesByTeamId(teamId) {
   }
 }
 const getMatch = async (matchId) => {
+  console.log(matchId);
   try {
     // Find the match by ID
     const match = await Match.findById(matchId);
-
+    console.log(match);
     if (!match) {
       throw { status: 404, message: "Match not found" };
     }
@@ -34,22 +36,46 @@ const getMatch = async (matchId) => {
     };
   }
 };
+
 const getMatchById = async (matchId) => {
   try {
     // Find the match by ID
     const match = await Match.findById(matchId);
-
+    console.log(match);
     if (!match) {
       throw { status: 404, message: "Match not found" };
     }
 
+    try {
+      const matchStat1 = await MatchStatController.getMatchStats(
+        matchId,
+        match.team1._id
+      );
+    } catch {
+      const newMatchStat1 = new matchStats({
+        match: match._id,
+        team: match.team1._id,
+      });
+
+      await newMatchStat1.save();
+    }
+    try {
+      const matchStat2 = await MatchStatController.getMatchStats(
+        matchId,
+        match.team2._id
+      );
+    } catch {
+      const newMatchStat2 = new matchStats({
+        match: match._id,
+        team: match.team2._id,
+      });
+
+      await newMatchStat2.save();
+    }
+
     // Find the teams by their IDs
-    const team1 = await Team.findById(match.team1);
-    const team2 = await Team.findById(match.team2);
-    const team1p = await Team.findById(match.team1).populate("lineup");
-    const team2p = await Team.findById(match.team2).populate("lineup");
-    const team2s = await MatchStats.findById(match.statsTeam1);
-    const team1s = await MatchStats.findById(match.statsTeam1);
+    const team1 = await Team.findById(match.team1).populate("lineup");
+    const team2 = await Team.findById(match.team2).populate("lineup");
 
     const team1Stats = await MatchStats.findOne({
       match: matchId,
@@ -69,10 +95,7 @@ const getMatchById = async (matchId) => {
       ...match.toObject(),
       team1Name: team1.name,
       team2Name: team2.name,
-      team1s,
-      team2s,
-      team1p,
-      team2p,
+
       team1: {
         ...team1.toObject(),
         stats: team1Stats.toObject(),
@@ -239,7 +262,7 @@ const createGroupMatches = async (tournamentId) => {
             team1,
             team2,
             tournament: tournament._id,
-            stage: "GROUP_STAGE",
+            stage: "KNOCKOUT",
             round: 1,
             nextMatch: null,
             isWinner: null,
@@ -264,7 +287,7 @@ const createGroupMatches = async (tournamentId) => {
             team1: null,
             team2: null,
             tournament: tournament._id,
-            stage: "GROUP_STAGE",
+            stage: "KNOCKOUT",
             round: round,
             nextMatch: null,
             isWinner: null,
@@ -321,11 +344,11 @@ const getAllMatchesForTournament = async (tournamentId) => {
     const matches = await Match.find({ tournament: tournamentId })
       .populate({
         path: "team1",
-        select: "name stage",
+        select: "name stage logo",
       })
       .populate({
         path: "team2",
-        select: "name stage",
+        select: "name stage logo",
       });
     return matches;
   } catch (error) {
@@ -387,8 +410,8 @@ const getBracketForTournament = async (tournamentId) => {
 
 const getLiveMatches = async () => {
   try {
-    const liveMatches = await Match.find({ status: "live" }).populate(
-      "team1 team2"
+    const liveMatches = await Match.find({ status: "LIVE" }).populate(
+      "team1 team2 statsTeam1 statsTeam2"
     );
     return liveMatches;
   } catch (error) {

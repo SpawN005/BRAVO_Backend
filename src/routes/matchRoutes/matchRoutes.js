@@ -92,7 +92,7 @@ router.get("/team/:teamId", async (req, res) => {
     const teamId = req.params.teamId;
 
     // Call the controller method to get all matches for the specified tournament ID
-    const matches = await MatchController.getMatch(teamId);
+    const matches = await MatchController.getMatchesByTeamId(teamId);
 
     res.status(200).json(matches);
   } catch (error) {
@@ -121,34 +121,8 @@ router.get("/bracket/:tournamentId", async (req, res) => {
 router.get("/:matchId", async (req, res) => {
   try {
     const matchId = req.params.matchId;
-    console.log(matchId);
+
     const match = await MatchController.getMatchById(matchId);
-
-    try {
-      const matchStat1 = await MatchStatController.getMatchStats(
-        matchId,
-        match.team1._id
-      );
-    } catch {
-      const newMatchStat1 = new matchStats({
-        match: match._id,
-        team: match.team1._id,
-      });
-
-      await newMatchStat1.save();
-    }
-    try {
-      const matchStat2 = await MatchStatController.getMatchStats(
-        matchId,
-        match.team2._id
-      );
-    } catch {
-      const newMatchStat2 = new matchStats({
-        match: match._id,
-        team: match.team2._id,
-      });
-      await newMatchStat2.save();
-    }
 
     res.status(200).json(match);
   } catch (error) {
@@ -216,27 +190,7 @@ router.patch("finish/:matchId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
-// not mine just for test
-router.get("/:teamId", async (req, res) => {
-  try {
-    // Trim the teamId to remove extra whitespace or newline characters
-    const teamId = req.params.teamId.trim();
 
-    // Get team details by ID
-    const team = await MatchController.getTeamById(teamId);
-
-    // Check if the team exists
-    if (!team) {
-      return res.status(404).json({ message: "Team not found" });
-    }
-
-    // Return team details
-    res.status(200).json(team);
-  } catch (error) {
-    console.error("Error getting team by ID:", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
-  }
-});
 router.patch("/patch/:id", async (req, res) => {
   try {
     const updatedMatch = await MatchController.patchTMatchById(

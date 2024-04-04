@@ -128,6 +128,10 @@ const tournamentSchema = new mongoose.Schema({
       ref: "Matches",
     },
   ],
+  tournamentWinner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Teams",
+  },
   standings: {
     type: [standingsSchema],
     default: function () {

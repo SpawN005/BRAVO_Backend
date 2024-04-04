@@ -167,7 +167,7 @@ router.post("/updateTeamWin/:matchId", async (req, res) => {
       return res.status(404).json({ message: "Match not found" });
     }
 
-    await matchStatController.updateTeamWin(matchId, team1Id, team2Id);
+    await matchStatController.updateTeamWin(match);
 
     res.status(200).json({ message: "Team wins updated successfully" });
   } catch (error) {
