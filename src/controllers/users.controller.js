@@ -14,34 +14,32 @@ exports.insert = (req, res) => {
       });
     })
 
-
     .catch(() => {
-     // Map roles to permission levels
-     const rolePermissionMapping = {
-      'OBSERVER': 1,
-      'REFEREE': 2,
-      'MANAGER': 3,
-      'ORGANIZER': 4
-    };
-    
-    let permissionLevel = rolePermissionMapping[req.body.role] || req.body.permissionLevel;
+      // Map roles to permission levels
+      const rolePermissionMapping = {
+        OBSERVER: 1,
+        REFEREE: 2,
+        MANAGER: 3,
+        ORGANIZER: 4,
+      };
 
+      let permissionLevel =
+        rolePermissionMapping[req.body.role] || req.body.permissionLevel;
 
-        let salt = crypto.randomBytes(16).toString("base64");
-        let hash = crypto
-          .createHmac("sha512", salt)
-          .update(req.body.password)
-          .digest("base64");
-        req.body.password = salt + "$" + hash;
-      
-      console.log(req.body)
-      console.log(permissionLevel)
+      let salt = crypto.randomBytes(16).toString("base64");
+      let hash = crypto
+        .createHmac("sha512", salt)
+        .update(req.body.password)
+        .digest("base64");
+      req.body.password = salt + "$" + hash;
+
+      console.log(req.body);
+      console.log(permissionLevel);
       let newUser = {
         userIdentity: req.body,
         permissionLevel: permissionLevel,
       };
 
-      
       UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
           result = result.toJSON();
@@ -60,7 +58,6 @@ exports.insert = (req, res) => {
               message: "Invalid user object",
             });
       });
-      
     });
 };
 
@@ -348,7 +345,7 @@ exports.getTournaments = async (req, res) => {
     res.status(200).send({
       code: 200,
       status: "success",
-      data: user,
+      data: user.tournamentIds,
     });
   } catch (error) {
     console.error("Error fetching user tournaments:", error);
