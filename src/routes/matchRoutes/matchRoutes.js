@@ -87,7 +87,22 @@ router.get("/matches/:tournamentId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
-router.get("/team/:teamId", async (req, res) => {
+router.get("/team/:matchId", async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+
+    // Call the controller method to get all matches for the specified tournament ID
+    const matches = await MatchController.getMatch(matchId);
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
+router.get("/myteam/:teamId", async (req, res) => {
   try {
     const teamId = req.params.teamId;
 
