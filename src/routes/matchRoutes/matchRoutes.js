@@ -1,7 +1,11 @@
 const express = require("express");
 const MatchController = require("../../controllers/match.controller");
+const MatchStatController = require("../../controllers/matchStat.controller");
+const matchStats = require("../../models/matchStats");
+
 const router = express.Router();
 const ValidationMiddleware = require("../../middlewares/validation/validation.middleware");
+const { getMatchStats } = require("../../controllers/matchStat.controller");
 
 router.get("/tournaments/:tournamentId", async (req, res) => {
   try {
@@ -56,7 +60,7 @@ router.post("/group-matches/:tournamentId", async (req, res) => {
     const tournamentId = req.params.tournamentId;
 
     const matches = await MatchController.createGroupMatches(tournamentId); // Pass tournamentId to the controller
-console.log(matches)
+    console.log(matches);
     res.status(201).json(matches);
   } catch (error) {
     console.error("Error creating group matches:", error);
@@ -88,8 +92,33 @@ router.get("/:matchId", async (req, res) => {
   try {
     const matchId = req.params.matchId;
 
-    // Call the controller method to get the match by ID
     const match = await MatchController.getMatchById(matchId);
+
+    try {
+      const matchStat1 = await MatchStatController.getMatchStats(
+        matchId,
+        match.team1._id
+      );
+    } catch {
+      const newMatchStat1 = new matchStats({
+        match: match._id,
+        team: match.team1._id,
+      });
+
+      await newMatchStat1.save();
+    }
+    try {
+      const matchStat2 = await MatchStatController.getMatchStats(
+        matchId,
+        match.team2._id
+      );
+    } catch {
+      const newMatchStat2 = new matchStats({
+        match: match._id,
+        team: match.team2._id,
+      });
+      await newMatchStat2.save();
+    }
 
     res.status(200).json(match);
   } catch (error) {
@@ -121,7 +150,6 @@ router.patch("update-date/:matchId", async (req, res) => {
 });
 router.patch("/patch/:id", async (req, res) => {
   try {
-   
     const updatedMatch = await MatchController.patchTMatchById(
       req.params.id,
       req.body
@@ -189,6 +217,5 @@ router.get("/user/:userId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
-
 
 module.exports = router;
