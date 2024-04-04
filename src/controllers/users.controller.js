@@ -180,7 +180,7 @@ exports.getObserversByTournamentId = (req, res) => {
     );
 };
 exports.getObservers = (req, res) => {
-  UserModel.findByPermissionLevel(2)
+  UserModel.findByPermissionLevel(1)
     .then((users) => {
       const observers = users;
       console.log("observers", observers);
@@ -208,7 +208,7 @@ exports.getObservers = (req, res) => {
     );
 };
 exports.getReferees = (req, res) => {
-  UserModel.findByPermissionLevel(1)
+  UserModel.findByPermissionLevel(2)
     .then((users) => {
       const Referees = users;
       if (Referees.length > 0) {

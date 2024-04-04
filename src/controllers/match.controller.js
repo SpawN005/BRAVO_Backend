@@ -336,14 +336,14 @@ const getTeamById = async (teamId) => {
 const getAllMatchesForTournament = async (tournamentId) => {
   try {
     // Find all matches for the specified tournament ID
-    const matches = await Match.find({ tournamentId })
+    const matches = await Match.find({ tournament: tournamentId })
       .populate({
         path: "team1",
-        select: "name ",
+        select: "name stage",
       })
       .populate({
         path: "team2",
-        select: "name ",
+        select: "name stage",
       });
     return matches;
   } catch (error) {

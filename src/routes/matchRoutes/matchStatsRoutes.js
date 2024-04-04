@@ -152,7 +152,7 @@ router.post("/startMatch/:matchId", async (req, res) => {
       return res.status(404).json({ message: "Match not found" });
     }
 
-    await matchStatController.startMatch(match);
+    await matchStatController.startMatch(matchId);
 
     res.status(200).json({ message: "Team start updated successfully" });
   } catch (error) {
