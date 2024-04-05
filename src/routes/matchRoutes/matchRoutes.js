@@ -1,7 +1,11 @@
 const express = require("express");
 const MatchController = require("../../controllers/match.controller");
+const MatchStatController = require("../../controllers/matchStat.controller");
+const matchStats = require("../../models/matchStats");
+
 const router = express.Router();
 const ValidationMiddleware = require("../../middlewares/validation/validation.middleware");
+const { getMatchStats } = require("../../controllers/matchStat.controller");
 
 router.get("/tournaments/:tournamentId", async (req, res) => {
   try {
@@ -83,6 +87,36 @@ router.get("/matches/:tournamentId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
+router.get("/team/:matchId", async (req, res) => {
+  try {
+    const matchId = req.params.matchId;
+
+    // Call the controller method to get all matches for the specified tournament ID
+    const matches = await MatchController.getMatch(matchId);
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
+router.get("/myteam/:teamId", async (req, res) => {
+  try {
+    const teamId = req.params.teamId;
+
+    // Call the controller method to get all matches for the specified tournament ID
+    const matches = await MatchController.getMatchesByTeamId(teamId);
+
+    res.status(200).json(matches);
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
 router.get("/bracket/:tournamentId", async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
@@ -103,7 +137,6 @@ router.get("/:matchId", async (req, res) => {
   try {
     const matchId = req.params.matchId;
 
-    // Call the controller method to get the match by ID
     const match = await MatchController.getMatchById(matchId);
 
     res.status(200).json(match);
@@ -172,28 +205,22 @@ router.patch("finish/:matchId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
-// not mine just for test
-router.get("/:teamId", async (req, res) => {
+
+router.patch("/patch/:id", async (req, res) => {
   try {
-    // Trim the teamId to remove extra whitespace or newline characters
-    const teamId = req.params.teamId.trim();
+    const updatedMatch = await MatchController.patchTMatchById(
+      req.params.id,
+      req.body
+    );
 
-    // Get team details by ID
-    const team = await MatchController.getTeamById(teamId);
-
-    // Check if the team exists
-    if (!team) {
-      return res.status(404).json({ message: "Team not found" });
-    }
-
-    // Return team details
-    res.status(200).json(team);
+    res.status(200).json(updatedMatch);
   } catch (error) {
-    console.error("Error getting team by ID:", error.message);
-    res.status(500).json({ message: "Internal Server Error" });
+    console.error("Error updating match date by ID:", error);
+    res
+      .status(error.status || "500")
+      .json({ message: error.message || "Internal Server Error" });
   }
 });
-
 router.post("/update-score", async (req, res) => {
   try {
     // Add logic to update the score
@@ -223,6 +250,20 @@ router.get("/user/:userId", async (req, res) => {
     res
       .status(error.status || 500)
       .json({ message: error.message || "Internal Server Error" });
+  }
+});
+router.get("/", async (req, res) => {
+  try {
+    const liveMatches = await MatchController.getLiveMatches();
+    res.status(200).json(liveMatches);
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des matchs en direct :",
+      error
+    );
+    res
+      .status(500)
+      .json({ error: "Erreur lors de la récupération des matchs en direct." });
   }
 });
 

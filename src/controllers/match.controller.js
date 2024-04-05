@@ -1,9 +1,10 @@
 const Tournament = require("../models/tournament");
-
+const MatchStatController = require("../controllers/matchStat.controller");
 const Team = require("../models/team");
 const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
+const matchStats = require("../models/matchStats");
 
 // Initialize Socket.IO instance (assuming you have already created an HTTP server)
 async function getMatchesByTeamId(teamId) {
@@ -17,12 +18,12 @@ async function getMatchesByTeamId(teamId) {
     throw error;
   }
 }
-
-const getMatchById = async (matchId) => {
+const getMatch = async (matchId) => {
+  console.log(matchId);
   try {
     // Find the match by ID
     const match = await Match.findById(matchId);
-
+    console.log(match);
     if (!match) {
       throw { status: 404, message: "Match not found" };
     }
@@ -35,6 +36,86 @@ const getMatchById = async (matchId) => {
     };
   }
 };
+
+const getMatchById = async (matchId) => {
+  try {
+    // Find the match by ID
+    const match = await Match.findById(matchId);
+    console.log(match);
+    if (!match) {
+      throw { status: 404, message: "Match not found" };
+    }
+
+    try {
+      const matchStat1 = await MatchStatController.getMatchStats(
+        matchId,
+        match.team1._id
+      );
+    } catch {
+      const newMatchStat1 = new matchStats({
+        match: match._id,
+        team: match.team1._id,
+      });
+
+      await newMatchStat1.save();
+    }
+    try {
+      const matchStat2 = await MatchStatController.getMatchStats(
+        matchId,
+        match.team2._id
+      );
+    } catch {
+      const newMatchStat2 = new matchStats({
+        match: match._id,
+        team: match.team2._id,
+      });
+
+      await newMatchStat2.save();
+    }
+
+    // Find the teams by their IDs
+    const team1 = await Team.findById(match.team1).populate("lineup");
+    const team2 = await Team.findById(match.team2).populate("lineup");
+
+    const team1Stats = await MatchStats.findOne({
+      match: matchId,
+      team: match.team1,
+    });
+    const team2Stats = await MatchStats.findOne({
+      match: matchId,
+      team: match.team2,
+    });
+
+    if (!team1 || !team2) {
+      throw { status: 404, message: "One or more teams not found" };
+    }
+
+    // Add the team names to the match object
+    const matchWithTeamNames = {
+      ...match.toObject(),
+      team1Name: team1.name,
+      team2Name: team2.name,
+
+      team1: {
+        ...team1.toObject(),
+        stats: team1Stats.toObject(),
+      },
+      team2: {
+        ...team2.toObject(),
+        stats: team2Stats.toObject(),
+      },
+    };
+
+    return matchWithTeamNames;
+  } catch (error) {
+    console.error("Error getting match by ID:", error);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
+  }
+};
+
 const updateMatchDateById = async (matchId, newDate) => {
   try {
     // Find the match by ID and update its date
@@ -135,82 +216,6 @@ const getAllTeamsInTournament = async (tournamentId) => {
   }
 };
 
-const createMatch = async ({
-  team1,
-  team2,
-  tournament,
-  date,
-  stage,
-  lineup,
-  stadium,
-  referee,
-  observer,
-}) => {
-  try {
-    // Check if a value is provided for date and convert it to Date type
-    const matchDate = date ? new Date(date) : null;
-
-    // Create new match stats for each team
-    const matchStatsTeam1 = await MatchStats.create({
-      redCards: [],
-      yellowCards: [],
-      assisters: [],
-      scorers: [],
-      score: null,
-    });
-
-    const matchStatsTeam2 = await MatchStats.create({
-      redCards: [],
-      yellowCards: [],
-      assisters: [],
-      scorers: [],
-      score: null,
-    });
-
-    // Create a new match document with provided values or defaults (null or 0)
-    const newMatch = await Match.create({
-      team1: {
-        _id: team1._id,
-      },
-      statsTeam1: matchStatsTeam1._id, // Use distinct name for team1's stats
-
-      team2: {
-        _id: team2._id,
-      },
-      statsTeam2: matchStatsTeam2._id, // Use distinct name for team2's stats
-
-      tournament: tournament,
-      date: matchDate,
-      stage: stage || null,
-      lineup: lineup || [],
-      stadium: stadium ? stadium._id : null,
-      referee: referee || null,
-      observer: observer || null,
-    });
-
-    // Assign the match reference to matchStatsTeam1 and matchStatsTeam2
-    matchStatsTeam1.match = newMatch._id;
-    matchStatsTeam2.match = newMatch._id;
-    matchStatsTeam1.team = newMatch.team1;
-    matchStatsTeam2.team = newMatch.team2;
-
-    // Save the updated match stats with match references
-    await Promise.all([matchStatsTeam1.save(), matchStatsTeam2.save()]);
-
-    // Populate the 'stats' field for team1 and team2
-    const populatedMatch = await Match.findById(newMatch._id)
-      .populate({ path: "team1.statsTeam1", model: "MatchStats" })
-      .populate({ path: "team2.statsTeam2", model: "MatchStats" })
-      .exec();
-
-    console.log(populatedMatch);
-    return populatedMatch;
-  } catch (error) {
-    console.error("Error creating match:", error);
-    throw error;
-  }
-};
-
 const createGroupMatches = async (tournamentId) => {
   const matches = [];
   const groupMatches = [];
@@ -257,7 +262,7 @@ const createGroupMatches = async (tournamentId) => {
             team1,
             team2,
             tournament: tournament._id,
-            stage: "GROUP_STAGE",
+            stage: "KNOCKOUT",
             round: 1,
             nextMatch: null,
             isWinner: null,
@@ -282,7 +287,7 @@ const createGroupMatches = async (tournamentId) => {
             team1: null,
             team2: null,
             tournament: tournament._id,
-            stage: "GROUP_STAGE",
+            stage: "KNOCKOUT",
             round: round,
             nextMatch: null,
             isWinner: null,
@@ -336,14 +341,14 @@ const getTeamById = async (teamId) => {
 const getAllMatchesForTournament = async (tournamentId) => {
   try {
     // Find all matches for the specified tournament ID
-    const matches = await Match.find({ tournamentId })
+    const matches = await Match.find({ tournament: tournamentId })
       .populate({
         path: "team1",
-        select: "name ",
+        select: "name stage logo",
       })
       .populate({
         path: "team2",
-        select: "name ",
+        select: "name stage logo",
       });
     return matches;
   } catch (error) {
@@ -403,6 +408,35 @@ const getBracketForTournament = async (tournamentId) => {
   }
 };
 
+const getLiveMatches = async () => {
+  try {
+    const liveMatches = await Match.find({ status: "LIVE" }).populate(
+      "team1 team2"
+    );
+
+    // Parcourir chaque match en direct
+    const liveMatchesWithStats = await Promise.all(liveMatches.map(async match => {
+      // Obtenir les matchstats pour team1
+      const matchStatsTeam1 = await MatchStatController.getMatchStats(match._id, match.team1._id);
+      // Obtenir les matchstats pour team2
+      const matchStatsTeam2 = await MatchStatController.getMatchStats(match._id, match.team2._id);
+
+      return {
+        ...match.toObject(), // Convertir l'objet match en objet javascript
+        matchStatsTeam1,
+        matchStatsTeam2
+      };
+    }));
+
+    return liveMatchesWithStats;
+  } catch (error) {
+    console.error(
+      "Erreur lors de la récupération des matchs en direct :",
+      error
+    );
+    throw new Error("Erreur lors de la récupération des matchs en direct.");
+  }
+};
 const getMatchesByUserId = async (userId) => {
   try {
     const matches = await Match.find({
@@ -580,4 +614,6 @@ module.exports = {
   getBracketForTournament,
   patchTMatchById,
   getMatchesByTeamId,
+  getMatch,
+  getLiveMatches,
 };

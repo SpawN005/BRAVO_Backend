@@ -221,7 +221,7 @@ exports.addTournament = async (userId, tournamentId) => {
 };
 exports.getTournaments = async (id) => {
   try {
-    const user = await User.find({ _id: id }).populate({
+    const user = await User.findOne({ _id: id }).populate({
       path: "tournamentIds",
       select: "name",
     });

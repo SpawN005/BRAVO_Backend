@@ -35,6 +35,9 @@ const standingsSchema = new mongoose.Schema({
   goalDifference: {
     type: Number,
     default: 0,
+  }, gamesPlayed: {
+    type: Number,
+    default: 0,
   },
   // Add other relevant standings attributes as needed
 });
@@ -128,6 +131,10 @@ const tournamentSchema = new mongoose.Schema({
       ref: "Matches",
     },
   ],
+  tournamentWinner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Teams",
+  },
   standings: {
     type: [standingsSchema],
     default: function () {

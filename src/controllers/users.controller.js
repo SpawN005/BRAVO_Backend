@@ -198,7 +198,7 @@ exports.getObserversByTournamentId = (req, res) => {
     );
 };
 exports.getObservers = (req, res) => {
-  UserModel.findByPermissionLevel(2)
+  UserModel.findByPermissionLevel(1)
     .then((users) => {
       const observers = users;
       console.log("observers", observers);
@@ -226,7 +226,7 @@ exports.getObservers = (req, res) => {
     );
 };
 exports.getReferees = (req, res) => {
-  UserModel.findByPermissionLevel(1)
+  UserModel.findByPermissionLevel(2)
     .then((users) => {
       const Referees = users;
       if (Referees.length > 0) {
@@ -363,7 +363,7 @@ exports.getTournaments = async (req, res) => {
     res.status(200).send({
       code: 200,
       status: "success",
-      data: user,
+      data: user.tournamentIds,
     });
   } catch (error) {
     console.error("Error fetching user tournaments:", error);
