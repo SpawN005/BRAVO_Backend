@@ -411,9 +411,24 @@ const getBracketForTournament = async (tournamentId) => {
 const getLiveMatches = async () => {
   try {
     const liveMatches = await Match.find({ status: "LIVE" }).populate(
-      "team1 team2 statsTeam1 statsTeam2"
+      "team1 team2"
     );
-    return liveMatches;
+
+    // Parcourir chaque match en direct
+    const liveMatchesWithStats = await Promise.all(liveMatches.map(async match => {
+      // Obtenir les matchstats pour team1
+      const matchStatsTeam1 = await MatchStatController.getMatchStats(match._id, match.team1._id);
+      // Obtenir les matchstats pour team2
+      const matchStatsTeam2 = await MatchStatController.getMatchStats(match._id, match.team2._id);
+
+      return {
+        ...match.toObject(), // Convertir l'objet match en objet javascript
+        matchStatsTeam1,
+        matchStatsTeam2
+      };
+    }));
+
+    return liveMatchesWithStats;
   } catch (error) {
     console.error(
       "Erreur lors de la récupération des matchs en direct :",

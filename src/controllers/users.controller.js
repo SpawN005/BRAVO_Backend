@@ -13,31 +13,44 @@ exports.insert = (req, res) => {
         message: "Email already exists",
       });
     })
-
     .catch(() => {
-      // Map roles to permission levels
       const rolePermissionMapping = {
-        OBSERVER: 1,
-        REFEREE: 2,
-        MANAGER: 3,
-        ORGANIZER: 4,
+        'OBSERVER': 1,
+        'REFEREE': 2,
+        'MANAGER': 3,
+        'ORGANIZER': 4
       };
 
-      let permissionLevel =
-        rolePermissionMapping[req.body.role] || req.body.permissionLevel;
+      // Determine permission level either from the role or directly from the request
+      let permissionLevel = req.body.role 
+        ? rolePermissionMapping[req.body.role.toUpperCase()] 
+        : req.body.permissionLevel;
 
+      let passwordToHash = req.body.password;
+
+      // If the role leads to permission level 1 or 2, or it's set directly, generate a random password
+      if (!passwordToHash && [1, 2].includes(permissionLevel)) {
+        const randomPassword = generateRandomPassword();
+        console.log(`Generated password for ${req.body.email}: ${randomPassword}`);
+        // sendPasswordEmail(req.body.email, randomPassword); // Implement this function as needed
+
+        passwordToHash = randomPassword;
+      }
+
+      // Hash the password
       let salt = crypto.randomBytes(16).toString("base64");
-      let hash = crypto
-        .createHmac("sha512", salt)
-        .update(req.body.password)
-        .digest("base64");
+      let hash = crypto.createHmac("sha512", salt).update(passwordToHash).digest("base64");
       req.body.password = salt + "$" + hash;
 
-      console.log(req.body);
-      console.log(permissionLevel);
       let newUser = {
-        userIdentity: req.body,
+        userIdentity: {
+          email: req.body.email,
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          password: req.body.password
+        },
         permissionLevel: permissionLevel,
+        tournamentIds: req.body.tournamentId ? [req.body.tournamentId] : []
       };
 
       UserModel.createUser(newUser).then((result) => {
@@ -61,6 +74,9 @@ exports.insert = (req, res) => {
     });
 };
 
+
+
+
 //-------------------------------------------------------------
 // Fetching by Id
 exports.getById = (req, res) => {
@@ -83,7 +99,9 @@ exports.getById = (req, res) => {
 //-------------------------------------------------------------
 // Updating
 exports.patchById = (req, res) => {
-  if (req.body.password) {
+  console.log(req.body.userIdentity);
+
+  if (req.body.userIdentity.password) {
     let salt = crypto.randomBytes(16).toString("base64");
     let hash = crypto
       .createHmac("sha512", salt)
@@ -91,7 +109,6 @@ exports.patchById = (req, res) => {
       .digest("base64");
     req.body.password = salt + "$" + hash;
   }
-  console.log(req.body);
   UserModel.patchUser(req.params.userId, req.body)
     .then((result) => {
       res.status(200).send({
@@ -107,6 +124,7 @@ exports.patchById = (req, res) => {
         message: "User not found, retry with a valid userId.",
       })
     );
+    
 };
 //-------------------------------------------------------------
 // Fetching users
@@ -238,7 +256,7 @@ exports.getRefereesByTournamentId = (req, res) => {
   UserModel.findByTournamentId(req.params.tournamentId)
     .then((users) => {
       // Filter users by permissionLevel
-      const referees = users.filter((user) => user.permissionLevel === 3);
+      const referees = users.filter((user) => user.permissionLevel === 2);
       console.log(referees);
       if (referees.length > 0) {
         res.status(200).send({

@@ -28,11 +28,12 @@ const getStadiumById = async (req, res) => {
 
 // Create a new stadium
 const createStadium = async (req, res) => {
-  const { name, location, capacity, isAvailable } = req.body;
+  const { name, location, capacity, address,isAvailable } = req.body;
 
   const newStadium = new Stadium({
     name,
     location,
+    address,
     capacity,
     isAvailable,
   });
@@ -49,7 +50,7 @@ const createStadium = async (req, res) => {
 // Update a stadium by ID
 const updateStadiumById = async (req, res) => {
   const { id } = req.params;
-  const { name, location, capacity, isAvailable } = req.body;
+  const { name, location, capacity,address, isAvailable } = req.body;
 
   try {
     const updatedStadium = await Stadium.findByIdAndUpdate(
@@ -58,6 +59,7 @@ const updateStadiumById = async (req, res) => {
         name,
         location,
         capacity,
+        address,
         isAvailable,
       },
       { new: true }

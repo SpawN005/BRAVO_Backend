@@ -35,6 +35,9 @@ const standingsSchema = new mongoose.Schema({
   goalDifference: {
     type: Number,
     default: 0,
+  }, gamesPlayed: {
+    type: Number,
+    default: 0,
   },
   // Add other relevant standings attributes as needed
 });

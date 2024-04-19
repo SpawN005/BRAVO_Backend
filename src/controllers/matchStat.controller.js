@@ -285,6 +285,8 @@ const updateTeamWin = async (match) => {
         if (!team1Standings || !team2Standings) {
           throw new Error("Standings not found for one or both teams");
         }
+        team1Standings.gamesPlayed+=1;
+        team2Standings.gamesPlayed+=1;
 
         if (match.isWinner === match.team1) {
           team1Standings.points += 3;
@@ -335,7 +337,7 @@ const updateTeamWin = async (match) => {
         }
 
         await tournament.save();
-
+          console.log("first")
         break;
       case "KNOCKOUT":
         const nextM = await Match.findById(match.nextMatch);
