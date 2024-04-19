@@ -120,6 +120,10 @@ const tournamentSchema = new mongoose.Schema({
   rules: {
     type: ruleSchema,
   },
+  tournamentWinner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Teams",
+  },
   groups: [groupSchema], // Array of group objects
   sponsors: [sponsorSchema],
   matches: [
@@ -190,6 +194,72 @@ tournamentSchema.statics.findByOwner = async function (ownerId) {
   } catch (error) {
     throw new Error(
       "Error finding tournaments for the owner: " + error.message
+    );
+  }
+};
+tournamentSchema.statics.StandingsUpdate = async function(tournamentId,scoreTeam1,scoreTeam2,match){
+  try {
+    
+    const tournament = await this.findById(tournamentId);
+
+    const team1Standings = tournament.standings.find(
+      (standing) => String(standing.team) === String(match.team1)
+    );
+    const team2Standings = tournament.standings.find(
+      (standing) => String(standing.team) === String(match.team2)
+    );
+
+    if (!team1Standings || !team2Standings) {
+      throw new Error("Standings not found for one or both teams");
+    }
+
+    if (match.isWinner === match.team1) {
+      team1Standings.points += tournament.rules.pointsPerWin;
+      team1Standings.wins += 1;
+      team1Standings.goalsFor += scoreTeam1;
+      team1Standings.goalsAgainst += scoreTeam2;
+      team1Standings.goalDifference =
+      Math.abs(team1Standings.goalsFor - team1Standings.goalsAgainst);
+
+      team2Standings.losses += 1;
+      team2Standings.goalsFor += scoreTeam2;
+      team2Standings.goalsAgainst += scoreTeam1;
+      team2Standings.goalDifference =
+      Math.abs(team2Standings.goalsFor - team2Standings.goalsAgainst);
+    } else if (match.isWinner === "DRAW") {
+      team1Standings.points += tournament.rules.pointsPerDraw;
+      team1Standings.draws += 1;
+      team1Standings.goalsFor += scoreTeam1;
+      team1Standings.goalsAgainst += scoreTeam2;
+      team1Standings.goalDifference =
+      Math.abs(team1Standings.goalsFor - team1Standings.goalsAgainst);
+
+      team2Standings.points += tournament.rules.pointsPerDraw;
+      team2Standings.draws += 1;
+      team2Standings.goalsFor += scoreTeam2;
+      team2Standings.goalsAgainst += scoreTeam1;
+      team2Standings.goalDifference =
+      Math.abs(team2Standings.goalsFor - team2Standings.goalsAgainst);
+    } else {
+      team2Standings.points += tournament.rules.pointsPerWin;
+      team2Standings.wins += 1;
+      team2Standings.goalsFor += scoreTeam2;
+      team2Standings.goalsAgainst += scoreTeam1;
+      team2Standings.goalDifference =
+      Math.abs(team2Standings.goalsFor - team2Standings.goalsAgainst);
+
+      team1Standings.losses += 1;
+      team1Standings.goalsFor += scoreTeam1;
+      team1Standings.goalsAgainst += scoreTeam2;
+      team1Standings.goalDifference =
+      Math.abs(team1Standings.goalsFor - team1Standings.goalsAgainst);
+    }
+
+    await tournament.save();
+    return tournament;
+  } catch (error) {
+    throw new Error(
+      "Error updating tournament standings: " + error.message
     );
   }
 };
