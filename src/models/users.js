@@ -50,6 +50,17 @@ const userIdentitySchema = mongoose.Schema(
   },
   { _id: false }
 );
+const subscriptionSchema = mongoose.Schema({
+  sessionId: { type: String, required: true },
+  planId: { type: String },
+  startDate: { type: Date, default: Date.now() },
+  endDate: { type: Date },
+  status: { type: String, enum: ['active', 'cancelled', 'expired'], default: 'active' },
+  price : {type:String},
+  planType:{type: String}
+},
+{ _id: false }
+);
 
 const userSchema = mongoose.Schema({
   shouldReceiveInformations: {
@@ -63,18 +74,22 @@ const userSchema = mongoose.Schema({
   userIdentity: {
     type: userIdentitySchema,
   },
+  abonnement: {
+    type: subscriptionSchema,
+  },
   userAdress: {
     type: userAdressSchema,
   },
   tournamentIds: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Tournaments", // Replace with your Tournament collection name if different
+      ref: "Tournaments", 
     },
   ],
 });
 
 const User = mongoose.model("Users", userSchema);
+
 //-------------------------------------------------------
 exports.createUser = (userData) => {
   const user = new User(userData);
@@ -236,3 +251,4 @@ exports.getTournaments = async (id) => {
     throw error;
   }
 };
+//module.exports=User;

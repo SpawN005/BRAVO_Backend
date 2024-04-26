@@ -261,8 +261,7 @@ router.get("/", async (req, res) => {
       "Erreur lors de la récupération des matchs en direct :",
       error
     );
-    res
-      .status(500)
+    res.status(500)
       .json({ error: "Erreur lors de la récupération des matchs en direct." });
   }
 });
