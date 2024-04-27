@@ -8,6 +8,9 @@ const stadiumSchema = new mongoose.Schema({
   location: {
     type: String,
   },
+  address: {
+    type: String,
+  },
 
   capacity: {
     type: Number,

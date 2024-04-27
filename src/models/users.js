@@ -197,3 +197,38 @@ exports.removeById = (userId) => {
     });
   });
 };
+
+exports.addTournament = async (userId, tournamentId) => {
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+    user.tournamentIds = user.tournamentIds.filter((id) => id !== null);
+
+    user.tournamentIds.push(tournamentId);
+
+    await user.save();
+
+    console.log("Tournament added to user:", user);
+
+    return user;
+  } catch (error) {
+    console.error("Error adding tournament to user:", error);
+    throw error;
+  }
+};
+exports.getTournaments = async (id) => {
+  try {
+    const user = await User.findOne({ _id: id }).populate({
+      path: "tournamentIds",
+      select: "name",
+    });
+
+    return user;
+  } catch (error) {
+    console.error("Error fetching user tournaments:", error);
+    throw error;
+  }
+};

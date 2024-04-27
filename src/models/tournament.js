@@ -35,6 +35,9 @@ const standingsSchema = new mongoose.Schema({
   goalDifference: {
     type: Number,
     default: 0,
+  }, gamesPlayed: {
+    type: Number,
+    default: 0,
   },
   // Add other relevant standings attributes as needed
 });
@@ -146,6 +149,7 @@ const tournamentSchema = new mongoose.Schema({
 });
 
 tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
+  console.log(teamsPerPool);
   if (!teams || teams.length === 0 || !teamsPerPool) {
     throw new Error("Invalid teams or teamsPerPool provided");
   }

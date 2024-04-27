@@ -1,4 +1,5 @@
 var UserModel = require("../models/users");
+var MatchModel=require("../models/matches")
 var crypto = require("crypto");
 const { generateRandomPassword } = require("../utils/passwordUtils"); // Adjust the path as needed
 
@@ -14,36 +15,45 @@ exports.insert = (req, res) => {
       });
     })
     .catch(() => {
-      let permissionLevel = req.body.permissionLevel;
-      // Generate a random password for permission levels 1, 2, or 3
-      if ([1, 2, 3].includes(permissionLevel)) {
-        const randomPassword = generateRandomPassword();
-        console.log(
-          `Generated password for ${req.body.email}: ${randomPassword}`
-        );
-        //Placeholder for sending email - to be implemented later
-        //sendPasswordEmail(req.body.email, randomPassword);
+      const rolePermissionMapping = {
+        'OBSERVER': 1,
+        'REFEREE': 2,
+        'MANAGER': 3,
+        'ORGANIZER': 4
+      };
 
-        let salt = crypto.randomBytes(16).toString("base64");
-        let hash = crypto
-          .createHmac("sha512", salt)
-          .update(randomPassword)
-          .digest("base64");
-        req.body.password = salt + "$" + hash;
-      } else {
-        let salt = crypto.randomBytes(16).toString("base64");
-        let hash = crypto
-          .createHmac("sha512", salt)
-          .update(req.body.password)
-          .digest("base64");
-        req.body.password = salt + "$" + hash;
+      // Determine permission level either from the role or directly from the request
+      let permissionLevel = req.body.role 
+        ? rolePermissionMapping[req.body.role.toUpperCase()] 
+        : req.body.permissionLevel;
+
+      let passwordToHash = req.body.password;
+
+      // If the role leads to permission level 1 or 2, or it's set directly, generate a random password
+      if (!passwordToHash && [1, 2].includes(permissionLevel)) {
+        const randomPassword = generateRandomPassword();
+        console.log(`Generated password for ${req.body.email}: ${randomPassword}`);
+        // sendPasswordEmail(req.body.email, randomPassword); // Implement this function as needed
+
+        passwordToHash = randomPassword;
       }
 
+      // Hash the password
+      let salt = crypto.randomBytes(16).toString("base64");
+      let hash = crypto.createHmac("sha512", salt).update(passwordToHash).digest("base64");
+      req.body.password = salt + "$" + hash;
+
       let newUser = {
-        userIdentity: req.body,
+        userIdentity: {
+          email: req.body.email,
+          firstName: req.body.firstName,
+          lastName: req.body.lastName,
+          password: req.body.password
+        },
         permissionLevel: permissionLevel,
-        tournamentIds: [req.body.tournamentId], // Add tournamentId to the array
+        tournamentIds: req.body.tournamentId ? [req.body.tournamentId] : []
       };
+
       UserModel.createUser(newUser).then((result) => {
         if (result != undefined) {
           result = result.toJSON();
@@ -64,6 +74,9 @@ exports.insert = (req, res) => {
       });
     });
 };
+
+
+
 
 //-------------------------------------------------------------
 // Fetching by Id
@@ -87,7 +100,9 @@ exports.getById = (req, res) => {
 //-------------------------------------------------------------
 // Updating
 exports.patchById = (req, res) => {
-  if (req.body.password) {
+  console.log(req.body.userIdentity);
+
+  if (req.body.userIdentity.password) {
     let salt = crypto.randomBytes(16).toString("base64");
     let hash = crypto
       .createHmac("sha512", salt)
@@ -95,7 +110,6 @@ exports.patchById = (req, res) => {
       .digest("base64");
     req.body.password = salt + "$" + hash;
   }
-  console.log(req.body);
   UserModel.patchUser(req.params.userId, req.body)
     .then((result) => {
       res.status(200).send({
@@ -111,6 +125,7 @@ exports.patchById = (req, res) => {
         message: "User not found, retry with a valid userId.",
       })
     );
+    
 };
 //-------------------------------------------------------------
 // Fetching users
@@ -211,6 +226,32 @@ exports.getObservers = (req, res) => {
       })
     );
 };
+exports.getAvailableObservers = async (req, res) => {
+  try {
+    const observers = await UserModel.findByPermissionLevel(1);
+    
+    const matches = await MatchModel.findByDate(req.params.date);
+    const assignedObserverIds = matches.map(match => match.observer);
+    const availableObservers = observers.filter(observer => {
+      return !assignedObserverIds.find(id => id.equals(observer._id));
+    });
+    
+    res.status(200).send({
+      code: 200,
+      status: "success",
+      data: availableObservers,
+    });
+  } catch (error) {
+    console.error("Error fetching available observers:", error);
+    res.status(500).send({
+      code: 500,
+      status: "error",
+      message: "An error occurred while fetching available observers",
+      error: error.message,
+    });
+  }
+};
+
 exports.getReferees = (req, res) => {
   UserModel.findByPermissionLevel(2)
     .then((users) => {
@@ -238,11 +279,34 @@ exports.getReferees = (req, res) => {
       })
     );
 };
+exports.getAvailableReferees = async (req, res) => {
+  try {
+    const referees = await UserModel.findByPermissionLevel(2);
+    const matches = await MatchModel.findByDate(req.params.date);
+    const assignedRefereeIds = matches.map(match => match.referee);
+    const availablReferees = referees.filter(referee => {
+      return !assignedRefereeIds.find(id => id.equals(referee._id));
+    });
+        res.status(200).send({
+      code: 200,
+      status: "success",
+      data: availablReferees,
+    });
+  } catch (error) {
+    console.error("Error fetching available observers:", error);
+    res.status(500).send({
+      code: 500,
+      status: "error",
+      message: "An error occurred while fetching available observers",
+      error: error.message,
+    });
+  }
+};
 exports.getRefereesByTournamentId = (req, res) => {
   UserModel.findByTournamentId(req.params.tournamentId)
     .then((users) => {
       // Filter users by permissionLevel
-      const referees = users.filter((user) => user.permissionLevel === 3);
+      const referees = users.filter((user) => user.permissionLevel === 2);
       console.log(referees);
       if (referees.length > 0) {
         res.status(200).send({
@@ -291,5 +355,73 @@ const sendPasswordEmail = async (email, password) => {
     console.log("Email sent:", info.response);
   } catch (error) {
     console.error("Error sending email:", error);
+  }
+};
+exports.addTournament = (req, res) => {
+  console.log(req.params.userId);
+
+  UserModel.addTournament(req.params.userId, req.body.tournamentId)
+    .then((user) => {
+      console.log(user);
+      if (!user) {
+        return res.status(404).send({
+          code: 404,
+          status: "not found",
+          message: "User not found",
+        });
+      }
+    })
+    .then(() => {
+      res.status(200).send({
+        code: 200,
+        status: "success",
+        message: "Tournament added to user",
+      });
+    })
+    .catch((error) => {
+      console.error("Error:", error);
+
+      // Handle different types of errors appropriately
+      if (error.name === "CastError") {
+        return res.status(400).send({
+          code: 400,
+          status: "bad request",
+          message: "Invalid user ID",
+        });
+      }
+
+      res.status(500).send({
+        code: 500,
+        status: "error",
+        message: "An error occurred while processing the request",
+        error: error.message, // Send only the error message for security reasons
+      });
+    });
+};
+exports.getTournaments = async (req, res) => {
+  try {
+    const user = await UserModel.getTournaments(req.params.userId);
+
+    if (!user) {
+      return res.status(404).send({
+        code: 404,
+        status: "not found",
+        message: "User not found, retry with a valid userId",
+      });
+    }
+
+    res.status(200).send({
+      code: 200,
+      status: "success",
+      data: user.tournamentIds,
+    });
+  } catch (error) {
+    console.error("Error fetching user tournaments:", error);
+    res.status(500).send({
+      code: 500,
+      status: "error",
+      message: "An error occurred while fetching user tournaments",
+      error: error.message,
+    });
   }
 };

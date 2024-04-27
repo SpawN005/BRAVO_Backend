@@ -14,10 +14,7 @@ const matchSchema = new mongoose.Schema({
     type: String, // "group" or "knockout"
     required: true,
   },
-  round: {
-    type: Number,
-    required: true,
-  },
+
   team1: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Teams",
@@ -54,17 +51,32 @@ const matchSchema = new mongoose.Schema({
   },
   nextMatch: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Matches", 
+    ref: "Matches",
   },
   round: {
     type: Number,
   },
-  status:{
+  status: {
     type: String,
     default: "UPCOMING",
   },
-  
 });
 
+matchSchema.statics.findByDate = function (date) {
+  return new Promise((resolve, reject) => {
+    const givenDate = new Date(date);
+    const twoHoursAgo = new Date(givenDate);
+    twoHoursAgo.setHours(givenDate.getHours() - 2);
+    const twoHoursLater = new Date(givenDate);
+    twoHoursLater.setHours(givenDate.getHours() + 2);
+    
+    this.find({ date: { $gte: twoHoursAgo, $lte: twoHoursLater } })
+      .exec(function (err, matches) {
+        
+          resolve(matches);
+        
+      });
+  });
+};
 
 module.exports = mongoose.model("Matches", matchSchema);

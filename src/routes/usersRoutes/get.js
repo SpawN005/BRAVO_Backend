@@ -33,7 +33,7 @@ const initializeGetRoutes = (app) => {
    *         description: User not found
    */
   app.get("/users/:userId", [UsersController.getById]);
-  
+  app.get("/users/tournaments/:userId", [UsersController.getTournaments]);
 
   /**
    * @swagger
@@ -61,13 +61,21 @@ const initializeGetRoutes = (app) => {
    *       400:
    *         description: Bad request
    */
-  app.get("/users", [ValidationMiddleware.validJWTNeeded, UsersController.list]);
+  app.get("/users", [
+    ValidationMiddleware.validJWTNeeded,
+    UsersController.list,
+  ]);
 
-  app.get("/observers/:tournamentId", [UsersController.getObserversByTournamentId]);
+  app.get("/observers/:tournamentId", [
+    UsersController.getObserversByTournamentId,
+  ]);
   app.get("/observers", [UsersController.getObservers]);
-  app.get("/referees/:tournamentId", [UsersController.getRefereesByTournamentId]);
+  app.get("/availableobservers/:date", [UsersController.getAvailableObservers]);
+  app.get("/referees/:tournamentId", [
+    UsersController.getRefereesByTournamentId,
+  ]);
   app.get("/referees", [UsersController.getReferees]);
-
+  app.get("/availablereferees/:date", [UsersController.getAvailableReferees]);
 };
 
 module.exports = initializeGetRoutes;

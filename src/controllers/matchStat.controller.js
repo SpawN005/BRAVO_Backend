@@ -4,9 +4,37 @@ const Team = require("../models/team");
 const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
-const matchStats = require("../models/matchStats");
 
-const scoreGoal = async (idmatch, idplayer1, idplayer2, idteam) => {
+const getMatchStatsByMatchId = async (matchId, teamId1, teamId2) => {
+  try {
+    const match = await Match.findById(matchId);
+    const team1 = match.team1;
+    const team2 = match.team2;
+    // Find the match stats for both teams by match ID
+    const matchStatsTeam1 = await MatchStats.findOne({
+      match: matchId,
+      team: teamId1,
+    }).populate("yellowCards");
+    const matchStatsTeam2 = await MatchStats.findOne({
+      match: matchId,
+      team: teamId2,
+    }).populate("scorers yellowCards");
+
+    if (!matchStatsTeam1 || !matchStatsTeam2) {
+      throw { status: 404, message: "Match stats not found" };
+    }
+
+    return { matchStatsTeam1, matchStatsTeam2 };
+  } catch (error) {
+    console.error("Error getting match stats by match ID:", error);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
+  }
+};
+
+const scoreGoal = async (idmatch, idplayer1, idteam) => {
   try {
     // Find the match using matchId and populate team stats
     const matchStats = await MatchStats.findById(idmatch)
@@ -15,7 +43,7 @@ const scoreGoal = async (idmatch, idplayer1, idplayer2, idteam) => {
         populate: { path: "player", model: "Player" },
       })
       .exec();
-
+    console.log(matchStats);
     if (!matchStats) {
       throw new Error("Match stats not found");
     }
@@ -55,8 +83,13 @@ const scoreGoal = async (idmatch, idplayer1, idplayer2, idteam) => {
           { new: true }
         );
       } else {
+        const player = await Player.findById(scorerPlayerId);
+        if (!player) {
+          throw new Error("Player not found");
+        }
         // Player is not in the scorers array, add them
         scoringTeamStats.scorers.push({
+          firstName: player.firstName,
           player: scorerPlayerId,
           goalsScored: 1,
         });
@@ -67,42 +100,6 @@ const scoreGoal = async (idmatch, idplayer1, idplayer2, idteam) => {
           { $inc: { goalsScored: 1 } },
           { new: true }
         );
-      }
-
-      // Check if idplayer2 exists
-      if (idplayer2) {
-        // Update individual player's assist
-        const assisterPlayerId = idplayer2; // Replace with the actual assister player ID
-
-        // Check if the player is already in the assisters array
-        const existingAssister = scoringTeamStats.assisters.find(
-          (assister) => assister.player._id.toString() === assisterPlayerId
-        );
-
-        if (existingAssister) {
-          // Player is already in the assisters array, update their assist
-          existingAssister.assist = (existingAssister.assist || 0) + 1;
-
-          // Save the updated assist to the Player model
-          const assisterPlayer = await Player.findByIdAndUpdate(
-            assisterPlayerId,
-            { $inc: { assist: 1 } },
-            { new: true }
-          );
-        } else {
-          // Player is not in the assisters array, add them
-          scoringTeamStats.assisters.push({
-            player: assisterPlayerId,
-            assist: 1,
-          });
-
-          // Save the updated assists to the Player model
-          const assisterPlayer = await Player.findByIdAndUpdate(
-            assisterPlayerId,
-            { $inc: { assist: 1 } },
-            { new: true }
-          );
-        }
       }
 
       console.log("Updated scoringTeamStats:", scoringTeamStats);
@@ -200,7 +197,29 @@ const assistOnly = async (idmatch, idplayer, idteam) => {
   }
 };
 
+const getMatch = async (matchId) => {
+  try {
+    // Find the match stats directly based on matchId and teamId
+    const matchStats = await MatchStats.find({ match: matchId })
+      .populate({
+        path: "redCards yellowCards assisters scorers lineup",
+        populate: { path: "player", model: "Player" },
+      })
+      .exec();
+
+    if (!matchStats) {
+      throw new Error("Match stats not found");
+    }
+
+    return matchStats;
+  } catch (error) {
+    console.error("Error getting match stats:", error);
+    throw error;
+  }
+};
+
 const getMatchStats = async (matchId, teamId) => {
+  console.log(teamId);
   try {
     const matchStats = await MatchStats.findOne({
       match: matchId,
@@ -224,11 +243,11 @@ const getMatchStats = async (matchId, teamId) => {
 };
 const updateTeamWin = async (match) => {
   try {
+    console.log(match);
     // Récupérer les statistiques du match pour chaque équipe
     const matchStatsTeam1 = await getMatchStats(match._id, match.team1._id);
     const matchStatsTeam2 = await getMatchStats(match._id, match.team2._id);
-    console.log(matchStatsTeam1);
-    console.log(matchStatsTeam2);
+   
     // Vérifier le score de chaque équipe
     const scoreTeam1 = matchStatsTeam1.score;
     const scoreTeam2 = matchStatsTeam2.score;
@@ -246,8 +265,9 @@ const updateTeamWin = async (match) => {
       await Team.updateOne({ _id: match.team2._id }, { $inc: { nul: 1 } });
       await Team.updateOne({ _id: match.team1._id }, { $inc: { nul: 1 } });
     }
+    await Match.updateOne({ _id: match._id }, { status: "FINISHED" });
     switch (match.stage) {
-      case "LEAGUE":
+      case "LEAGUE" || "GROUP_STAGE":
         const tournament = await Tournament.findById(match.tournament._id);
 
         const team1Standings = tournament.standings.find(
@@ -267,48 +287,48 @@ const updateTeamWin = async (match) => {
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
           team1Standings.goalDifference =
-          Math.abs(team1Standings.goalsFor - team1Standings.goalsAgainst);
+          team1Standings.goalsFor - team1Standings.goalsAgainst;
 
           team2Standings.losses += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference =
-          Math.abs(team2Standings.goalsFor - team2Standings.goalsAgainst);
+          team2Standings.goalsFor - team2Standings.goalsAgainst;
         } else if (match.isWinner === "DRAW") {
           team1Standings.points += tournament.rules.pointsPerDraw;
           team1Standings.draws += 1;
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
           team1Standings.goalDifference =
-          Math.abs(team1Standings.goalsFor - team1Standings.goalsAgainst);
+          team1Standings.goalsFor - team1Standings.goal;
 
           team2Standings.points += tournament.rules.pointsPerDraw;
           team2Standings.draws += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference =
-          Math.abs(team2Standings.goalsFor - team2Standings.goalsAgainst);
+          team2Standings.goalsFor - team2Standings.goal;
         } else {
           team2Standings.points += tournament.rules.pointsPerWin;
           team2Standings.wins += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference =
-          Math.abs(team2Standings.goalsFor - team2Standings.goalsAgainst);
+          team2Standings.goalsFor - team2Standings.goal;
 
           team1Standings.losses += 1;
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
-          team1Standings.goalDifference =
-          Math.abs(team1Standings.goalsFor - team1Standings.goalsAgainst);
+          team1Standings.goalDifference = 
+            team1Standings.goalsFor - team1Standings.goalsAgainst;
         }
 
         await tournament.save();
-
+          console.log("first")
         break;
       case "KNOCKOUT":
-        await Match.updateOne({ _id: match._id }, { status: "FINISHED" });
         const nextM = await Match.findById(match.nextMatch);
+        console.log(nextM);
         if (nextM) {
           if (!nextM.team1) {
             await Match.findByIdAndUpdate(nextM._id, { team1: match.isWinner });
@@ -332,11 +352,15 @@ const updateTeamWin = async (match) => {
 };
 const startMatch = async (matchId) => {
   try {
+    // Update match status
     await Match.updateOne({ _id: matchId }, { status: "LIVE" });
 
     console.log("Match status updated successfully");
   } catch (error) {
-    console.error("Error updating match status:", error);
+    console.error(
+      "Error updating match status or creating match stats:",
+      error
+    );
     throw error;
   }
 };
@@ -464,8 +488,6 @@ const addYellowCard = async (idmatch, idplayer, idteam) => {
       })
       .exec();
 
-    console.log(matchStats);
-
     if (!matchStats) {
       throw new Error("Match stats not found");
     }
@@ -492,7 +514,15 @@ const addYellowCard = async (idmatch, idplayer, idteam) => {
       existingPlayer.yellowCards += 1;
     } else {
       // Player is not in the yellowCards array, add them
-      teamStats.yellowCards.push({ player: playerId, yellowCards: 1 });
+      const player = await Player.findById(playerId);
+      if (!player) {
+        throw new Error("Player not found");
+      }
+      teamStats.yellowCards.push({
+        player: playerId,
+        firstName: player.firstName,
+        yellowCards: 1,
+      });
     }
 
     // Save the updated yellowCards to the Player model
@@ -505,7 +535,12 @@ const addYellowCard = async (idmatch, idplayer, idteam) => {
     // Save the updated matchStats document
     await teamStats.save();
 
-    return { taaa: teamStats };
+    console.log(teamStats);
+    const player = await Player.findById(playerId);
+
+    console.log(player.firstName);
+    x = player.firstName;
+    return player.firstName;
   } catch (error) {
     console.error(error);
     throw new Error("Internal Server Error");
@@ -563,76 +598,12 @@ const addRedCard = async (idmatch, idplayer, idteam) => {
     // Save the updated matchStats document
     await teamStats.save();
 
-    return { message: "Yellow card added successfully" };
+    const player = await Player.findById(playerId);
+
+    console.log(player.firstName);
+    return player.firstName;
   } catch (error) {
     console.error(error);
-    throw new Error("Internal Server Error");
-  }
-};
-const lineupMaking = async (matchId, idTeam, players) => {
-  try {
-    console.log(matchId, idTeam, players);
-    // Find the match using matchId and populate team stats
-    const matchStats = await MatchStats.findOne({
-      match: matchId,
-      team: idTeam,
-    })
-      .populate({
-        path: "redCards yellowCards assisters scorers lineup",
-        populate: { path: "player", model: "Players" },
-      })
-      .exec();
-    console.log(matchStats);
-
-    if (!matchStats) {
-      throw new Error("Match stats not found");
-    }
-
-    // Update the lineup in the match stats
-    matchStats.lineup = players.map((playerId) => ({ player: playerId }));
-
-    // Save the updated matchStats document
-    await matchStats.save();
-
-    return { message: "Lineup updated successfully" };
-  } catch (error) {
-    console.error(error);
-    throw new Error("Internal Server Error");
-  }
-};
-
-const getFormattedLineup = async (matchId, teamId) => {
-  try {
-    const matchStats = await MatchStats.findOne({
-      match: matchId,
-      team: teamId,
-    });
-
-    if (!matchStats) {
-      throw new Error("Match stats not found");
-    }
-
-    // Populate player details for each ID in the lineup
-    const populatedLineup = await Promise.all(
-      matchStats.lineup.map(async (playerId) => {
-        const player = await Player.findById(playerId);
-        if (player) {
-          return {
-            _id: player._id,
-            firstName: player.firstName,
-            lastName: player.lastName,
-            // Include other fields from the playerSchema as required
-          };
-        } else {
-          // Handle the case where the player is not found
-          return { message: `Player with ID ${playerId} not found` };
-        }
-      })
-    );
-
-    return populatedLineup.filter((player) => player != null);
-  } catch (error) {
-    console.error("Error fetching lineup:", error);
     throw new Error("Internal Server Error");
   }
 };
@@ -643,9 +614,9 @@ module.exports = {
   cancelGoal,
   addYellowCard,
   addRedCard,
-  lineupMaking,
-  getFormattedLineup,
   updateTeamWin,
   assistOnly,
   startMatch,
+  getMatch,
+  getMatchStatsByMatchId,
 };
