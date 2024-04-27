@@ -49,8 +49,16 @@ const matchSchema = new mongoose.Schema({
   },
   referee: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Users", // Reference to User model
+    ref: "Users", 
   },
+  status:{
+    type:String,
+    default: "UPCOMING"
+  },
+  isWinner:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Teams",
+  }
 });
 
 module.exports = mongoose.model("Matches", matchSchema);
