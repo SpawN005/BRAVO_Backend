@@ -341,7 +341,9 @@ const getTeamById = async (teamId) => {
 const getAllMatchesForTournament = async (tournamentId) => {
   try {
     // Find all matches for the specified tournament ID
-    const matches = await Match.find({ tournament: tournamentId })
+    const matches = await Match.find({
+      tournament: tournamentId,
+    })
       .populate({
         path: "team1",
         select: "name stage logo",
@@ -360,7 +362,10 @@ const getBracketForTournament = async (tournamentId) => {
   console.log(tournamentId);
   try {
     // Find all matches for the specified tournament ID, sorted by round
-    const matches = await Match.find({ tournament: tournamentId })
+    const matches = await Match.find({
+      tournament: tournamentId,
+      stage: { $in: ["KNOCKOUT", "KNOCKOUT_STAGE"] },
+    })
       .sort({ round: 1 })
       .populate({
         path: "team1",
@@ -415,18 +420,26 @@ const getLiveMatches = async () => {
     );
 
     // Parcourir chaque match en direct
-    const liveMatchesWithStats = await Promise.all(liveMatches.map(async match => {
-      // Obtenir les matchstats pour team1
-      const matchStatsTeam1 = await MatchStatController.getMatchStats(match._id, match.team1._id);
-      // Obtenir les matchstats pour team2
-      const matchStatsTeam2 = await MatchStatController.getMatchStats(match._id, match.team2._id);
+    const liveMatchesWithStats = await Promise.all(
+      liveMatches.map(async (match) => {
+        // Obtenir les matchstats pour team1
+        const matchStatsTeam1 = await MatchStatController.getMatchStats(
+          match._id,
+          match.team1._id
+        );
+        // Obtenir les matchstats pour team2
+        const matchStatsTeam2 = await MatchStatController.getMatchStats(
+          match._id,
+          match.team2._id
+        );
 
-      return {
-        ...match.toObject(), // Convertir l'objet match en objet javascript
-        matchStatsTeam1,
-        matchStatsTeam2
-      };
-    }));
+        return {
+          ...match.toObject(), // Convertir l'objet match en objet javascript
+          matchStatsTeam1,
+          matchStatsTeam2,
+        };
+      })
+    );
 
     return liveMatchesWithStats;
   } catch (error) {

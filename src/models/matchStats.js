@@ -32,8 +32,14 @@ const matchStatSchema = new mongoose.Schema({
   ],
   scorers: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Player",
+      player: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Player",
+      },
+      goalsScored: {
+        type: Number,
+        default: 0,
+      },
     },
   ],
   score: {
