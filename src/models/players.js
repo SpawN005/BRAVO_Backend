@@ -16,30 +16,26 @@ const playersSchema = new mongoose.Schema({
   },
   yellowCards: {
     type: Number,
-    // required: true
-  },
+    default: 0    },
   redCards: {
     type: Number,
-    // required: true
-  },
+    default: 0    },
   goalsScored: {
     type: Number,
-    // required: true
-  },
+    default: 0  },
   cleanSheets: {
     type: Number,
-    // required: true
-  },
+    default: 0  },
   assist: {
     type: Number,
+    default: 0  
     // required: true
   },
   logo:{
     type:String,
   },
   position: {
-    type: String, // Vous pouvez modifier le type selon vos besoins, par exemple, Enum si vous utilisez TypeScript ou un ensemble limité de valeurs.
-    // required: true
+    type: String, 
   },
 });
 

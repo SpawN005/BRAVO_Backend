@@ -15,35 +15,41 @@ const matchStatSchema = new mongoose.Schema({
   redCards: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
+      ref: "Player",
     },
   ],
   yellowCards: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
+      ref: "Player",
     },
   ],
   assisters: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
+      ref: "Player",
     },
   ],
   scorers: [
     {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
+      player: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Player",
+      },
+      goalsScored: {
+        type: Number,
+        default: 0,
+      },
     },
   ],
   score: {
     type: Number,
-    default: null,
+    default: 0,
   },
   lineup: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Players",
+      ref: "Player",
     },
   ],
 });
