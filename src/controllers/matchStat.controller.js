@@ -94,11 +94,14 @@ const scoreGoal = async (idmatch, idplayer1, idteam) => {
       }
 
       console.log("Updated scoringTeamStats:", scoringTeamStats);
+      const lastScoredPlayer = await Player.findById(scorerPlayerId);
 
-      // Save the updated matchStats document for the scoring team
       await scoringTeamStats.save();
 
-      return scoringTeamStats;
+      return {
+        scoringTeamStats,
+        lastScoredPlayerName: lastScoredPlayer.firstName,
+      };
     } else {
       throw new Error("Invalid scoringTeamStats");
     }
