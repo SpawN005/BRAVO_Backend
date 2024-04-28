@@ -18,7 +18,8 @@ const getMatchStatsByMatchId = async (matchId, teamId1, teamId2) => {
     const matchStatsTeam2 = await MatchStats.findOne({
       match: matchId,
       team: teamId2,
-    }).populate("scorers yellowCards");
+    }).populate("scorers yellowCards"); 
+    
 
     if (!matchStatsTeam1 || !matchStatsTeam2) {
       throw { status: 404, message: "Match stats not found" };
@@ -88,9 +89,17 @@ const scoreGoal = async (idmatch, idplayer1, idteam) => {
           throw new Error("Player not found");
         }
         // Player is not in the scorers array, add them
-        scoringTeamStats.scorers.push({ player: player._id, goalsScored: 1 });
-
+        scoringTeamStats.scorers.push({
+          firstName: player.firstName,
+          player: scorerPlayerId,
+          goalsScored: 1,
+        });
         // Save the updated goalsScored to the Player model
+        await Player.findByIdAndUpdate(
+          scorerPlayerId,
+          { $inc: { goalsScored: 1 } },
+          { new: true }
+        );
       }
 
       console.log("Updated scoringTeamStats:", scoringTeamStats);
@@ -187,7 +196,6 @@ const assistOnly = async (idmatch, idplayer, idteam) => {
     throw new Error("Internal Server Error");
   }
 };
-
 const getMatch = async (matchId) => {
   try {
     // Find the match stats directly based on matchId and teamId
@@ -262,10 +270,8 @@ const updateTeamWin = async (match) => {
       await Team.updateOne({ _id: match.team1._id }, { $inc: { nul: 1 } });
     }
     await Match.updateOne({ _id: match._id }, { status: "FINISHED" });
-    console.log(match.stage);
     switch (match.stage) {
       case "LEAGUE":
-      case "GROUP_STAGE":
         const tournament = await Tournament.findById(match.tournament._id);
 
         const team1Standings = tournament.standings.find(
@@ -278,8 +284,8 @@ const updateTeamWin = async (match) => {
         if (!team1Standings || !team2Standings) {
           throw new Error("Standings not found for one or both teams");
         }
-        team1Standings.gamesPlayed += 1;
-        team2Standings.gamesPlayed += 1;
+        team1Standings.gamesPlayed+=1;
+        team2Standings.gamesPlayed+=1;
 
         if (match.isWinner === match.team1) {
           team1Standings.points += 3;
@@ -330,10 +336,9 @@ const updateTeamWin = async (match) => {
         }
 
         await tournament.save();
-        console.log("first");
+          console.log("first")
         break;
       case "KNOCKOUT":
-      case "KNOCKOUT_STAGE":
         const nextM = await Match.findById(match.nextMatch);
         console.log(nextM);
         if (nextM) {

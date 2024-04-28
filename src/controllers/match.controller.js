@@ -6,6 +6,9 @@ const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
 const matchStats = require("../models/matchStats");
 
+
+
+
 // Initialize Socket.IO instance (assuming you have already created an HTTP server)
 async function getMatchesByTeamId(teamId) {
   try {
@@ -220,54 +223,107 @@ const createGroupMatches = async (tournamentId) => {
   const matches = [];
   const groupMatches = [];
   try {
-    const tournament = await Tournament.findById(tournamentId);
+    const tournament = await Tournament.findById(tournamentId).populate(
+      "groups.teams"
+    );
+
     if (!tournament) {
       throw { status: 404, message: "Tournament not found" };
     }
-    const matches = [];
-    if (tournament.rules?.type === 'GROUP_KNOCKOUT') {
+
+    if (tournament.rules?.type === "LEAGUE") {
+      const groupTeams = tournament.groups.flatMap((group) => group.teams);
+
+      for (let i = 0; i < groupTeams.length - 1; i++) {
+        for (let j = i + 1; j < groupTeams.length; j++) {
+          const team1 = groupTeams[i];
+          const team2 = groupTeams[j];
+
+          const newMatch = new Match({
+            team1,
+            team2,
+            tournament: tournament._id,
+            stage: "LEAGUE",
+            date: null,
+            // Add other properties for the match
+          });
+
+          const savedMatch = await newMatch.save();
+
+          matches.push(savedMatch);
+        }
+      }
+    } else if (tournament.rules?.type === "KNOCKOUT") {
       for (const group of tournament.groups) {
-        const groupTeams = group.teams;
-        for (let i = 0; i < groupTeams.length; i++) {
-          for (let j = i + 1; j < groupTeams.length; j++) {
-            const team1 = groupTeams[i];
-            const team2 = groupTeams[j];
-            const newMatch = await createMatch({
-              team1,
-              team2,
-              tournament: tournament._id,
-              stage: 'GROUP_STAGE',
-              date: null,
-              // Add other properties for the match
-            });
+        const groupTeams = group.teams.map((team) => team._id);
 
-          }
+        for (let i = 0; i < groupTeams.length; i += 2) {
+          const team1 = groupTeams[i];
+          const team2 = groupTeams[i + 1];
+
+          const newMatch = new Match({
+            team1,
+            team2,
+            tournament: tournament._id,
+            stage: "KNOCKOUT",
+            round: 1,
+            nextMatch: null,
+            isWinner: null,
+            date: null,
+          });
+
+          groupMatches.push(newMatch);
         }
       }
-    } else if (tournament.rules?.type === 'LEAGUE') {
-      const teams = tournament.groups.flatMap(group => group.teams);
-      for (let i = 0; i < teams.length; i++) {
-        for (let j = i + 1; j < teams.length; j++) {
-          const team1 = teams[i];
-          const team2 = teams[j];
-          const newMatch = await createMatch({team1, team2, tournament: tournament._id, stage: 'LEAGUE', date: null });
-          const newMatch2 = await createMatch({ team1: team2, team2: team1, tournament: tournament._id, stage: 'LEAGUE', date: null });
 
+      await Match.insertMany(groupMatches);
+      matches.push(...groupMatches);
 
-          // const match1 = new Match({ team1, team2, tournament: tournament._id, stage: 'LEAGUE', date: null });
-          // const match2 = new Match({ team1: team2, team2: team1, tournament: tournament._id, stage: 'LEAGUE', date: null });
+      let round = 2;
+      let remainingMatches = matches.length;
 
+      while (remainingMatches > 1) {
+        const roundMatches = [];
 
+        for (let i = 0; i < remainingMatches; i += 2) {
+          const newMatch = new Match({
+            team1: null,
+            team2: null,
+            tournament: tournament._id,
+            stage: "KNOCKOUT",
+            round: round,
+            nextMatch: null,
+            isWinner: null,
+            date: null,
+          });
 
-
+          roundMatches.push(newMatch);
         }
+
+        await Match.insertMany(roundMatches);
+        matches.push(...roundMatches);
+
+        remainingMatches = roundMatches.length;
+        round++;
       }
+
+      for (let i = 0, j = 0; i <= tournament.rules.nbTeams - 4; i += 2, j++) {
+        matches[i].nextMatch =
+          matches[i + tournament.rules.nbTeams / 2 - j]._id;
+        matches[i + 1].nextMatch =
+          matches[i + tournament.rules.nbTeams / 2 - j]._id;
+      }
+
+      await Promise.all(matches.map((match) => match.save()));
+
+      console.log("Group Matches created:", matches.length);
     } else {
       throw {
         status: 400,
         message: "Invalid tournament type for creating league matches",
       };
     }
+
     return matches;
   } catch (error) {
     console.error("Error creating league matches:", error.message);
@@ -285,124 +341,38 @@ const getTeamById = async (teamId) => {
   }
 };
 
-
-
-   const getAllMatchesForTournament = async (tournamentId) => {
-    try {
-      // Find all matches for the specified tournament ID
-      const matches = await Match.find({ tournament: tournamentId });
-      return matches;
-    } catch (error) {
-      console.error('Error fetching matches:', error);
-      throw { status: 500, message: 'Internal Server Error' };
-    }
-  };
-  
-
-
-
-
-
-
-
-  const createRandomMatch = async (req, res) => {
-    try {
-      const { tournamentId } = req.params;
-  
-      // Retrieve the tournament from the provided tournamentId
-      const tournament = await Tournament.findById(tournamentId);
-      if (!tournament) {
-        return res.status(404).json({ message: 'Tournament not found' });
-      }
-  
-      // Randomly select two teams from the tournament
-      const teams = tournament.groups.flatMap(group => group.teams);
-      const team1Index = Math.floor(Math.random() * teams.length);
-      let team2Index = Math.floor(Math.random() * teams.length);
-      // Ensure team2 is different from team1
-      while (team2Index === team1Index) {
-        team2Index = Math.floor(Math.random() * teams.length);
-      }
-      const team1 = teams[team1Index];
-      const team2 = teams[team2Index];
-  
-      // Generate other random match properties
-      const stage = "Knockout Stage";
-  
-      // Create the match
-      const newMatch = await createMatch({
-        team1,
-        team2,
-        tournament: tournamentId,
-        stage,
-
-        // Add other properties for the match
+const getAllMatchesForTournament = async (tournamentId) => {
+  try {
+    // Find all matches for the specified tournament ID
+    const matches = await Match.find({ tournament: tournamentId })
+      .populate({
+        path: "team1",
+        select: "name stage logo",
+      })
+      .populate({
+        path: "team2",
+        select: "name stage logo",
       });
-  
-      // Log specific properties of newMatch, not the entire object
-
-  
-      res.status(201).json(newMatch);
-      return;
-    } catch (error) {
-      console.error('Error creating random match:', error);
-      res.status(500).json({ message: 'Internal Server Error' });
-    }
-  };
-  // Assuming you have defined the necessary imports and dependencies
-
-  const createRandomKnockoutMatchesForTournament = async (tournamentId) => {
-    try {
-      const tournament = await Tournament.findById(tournamentId);
-      if (!tournament) {
-        throw { status: 404, message: 'Tournament not found' };
-      }
-  
-      const teams = tournament.groups.flatMap(group => group.teams);
-      const matches = [];
-  
-      // Create a copy of the teams array to track which teams have been matched
-      const remainingTeams = [...teams];
-  
-      // Loop until all teams have played a match
-      while (remainingTeams.length > 1) {
-        // Randomly select two teams
-        const team1Index = Math.floor(Math.random() * remainingTeams.length);
-        let team2Index = Math.floor(Math.random() * remainingTeams.length);
-        while (team2Index === team1Index) {
-          team2Index = Math.floor(Math.random() * remainingTeams.length);
-        }
-  
-        // Remove the selected teams from the remaining teams array
-        const team1 = remainingTeams.splice(team1Index, 1)[0];
-        const team2 = remainingTeams.splice(team2Index - (team2Index > team1Index ? 1 : 0), 1)[0];
-  
-        const stage = "Knockout Stage";
-  
-        // Create the match
-        const newMatch = await createMatch({
-          team1,
-          team2,
-          tournament: tournamentId,
-          stage,
-          
-          // Add other properties for the match
-        });
-  
-        matches.push(newMatch);
-      }
-  
-      return matches;
-    } catch (error) {
-      console.error('Error creating random knockout matches for tournament:', error);
-      throw { status: 500, message: 'Internal Server Error' };
-    }
-  };
-  
-
-
-  
-  
+    return matches;
+  } catch (error) {
+    console.error("Error fetching matches:", error);
+    throw { status: 500, message: "Internal Server Error" };
+  }
+};
+const getBracketForTournament = async (tournamentId) => {
+  console.log(tournamentId);
+  try {
+    // Find all matches for the specified tournament ID, sorted by round
+    const matches = await Match.find({ tournament: tournamentId })
+      .sort({ round: 1 })
+      .populate({
+        path: "team1",
+        select: "name",
+      })
+      .populate({
+        path: "team2",
+        select: "name",
+      });
 
     // Create an object to store rounds, using round number as keys
     const rounds = {};
@@ -448,26 +418,18 @@ const getLiveMatches = async () => {
     );
 
     // Parcourir chaque match en direct
-    const liveMatchesWithStats = await Promise.all(
-      liveMatches.map(async (match) => {
-        // Obtenir les matchstats pour team1
-        const matchStatsTeam1 = await MatchStatController.getMatchStats(
-          match._id,
-          match.team1._id
-        );
-        // Obtenir les matchstats pour team2
-        const matchStatsTeam2 = await MatchStatController.getMatchStats(
-          match._id,
-          match.team2._id
-        );
+    const liveMatchesWithStats = await Promise.all(liveMatches.map(async match => {
+      // Obtenir les matchstats pour team1
+      const matchStatsTeam1 = await MatchStatController.getMatchStats(match._id, match.team1._id);
+      // Obtenir les matchstats pour team2
+      const matchStatsTeam2 = await MatchStatController.getMatchStats(match._id, match.team2._id);
 
-        return {
-          ...match.toObject(), // Convertir l'objet match en objet javascript
-          matchStatsTeam1,
-          matchStatsTeam2,
-        };
-      })
-    );
+      return {
+        ...match.toObject(), // Convertir l'objet match en objet javascript
+        matchStatsTeam1,
+        matchStatsTeam2
+      };
+    }));
 
     return liveMatchesWithStats;
   } catch (error) {
@@ -652,6 +614,9 @@ module.exports = {
   getMatchById,
   updateMatchDateById,
   getMatchesByUserId,
-  createRandomMatch,
-  createRandomKnockoutMatchesForTournament,
+  getBracketForTournament,
+  patchTMatchById,
+  getMatchesByTeamId,
+  getMatch,
+  getLiveMatches,
 };
