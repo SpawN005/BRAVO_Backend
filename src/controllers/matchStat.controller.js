@@ -18,8 +18,7 @@ const getMatchStatsByMatchId = async (matchId, teamId1, teamId2) => {
     const matchStatsTeam2 = await MatchStats.findOne({
       match: matchId,
       team: teamId2,
-    }).populate("scorers yellowCards"); 
-    
+    }).populate("scorers yellowCards");
 
     if (!matchStatsTeam1 || !matchStatsTeam2) {
       throw { status: 404, message: "Match stats not found" };
@@ -94,6 +93,7 @@ const scoreGoal = async (idmatch, idplayer1, idteam) => {
           player: scorerPlayerId,
           goalsScored: 1,
         });
+
         // Save the updated goalsScored to the Player model
         await Player.findByIdAndUpdate(
           scorerPlayerId,
@@ -196,6 +196,7 @@ const assistOnly = async (idmatch, idplayer, idteam) => {
     throw new Error("Internal Server Error");
   }
 };
+
 const getMatch = async (matchId) => {
   try {
     // Find the match stats directly based on matchId and teamId
@@ -252,19 +253,16 @@ const updateTeamWin = async (match) => {
     // Vérifier le score de chaque équipe
     const scoreTeam1 = matchStatsTeam1.score;
     const scoreTeam2 = matchStatsTeam2.score;
-    let winner;
 
     // Mettre à jour l'attribut 'win' du modèle 'Team' en fonction du score
     if (scoreTeam1 > scoreTeam2) {
       await Team.updateOne({ _id: match.team1._id }, { $inc: { win: 1 } });
       await Team.updateOne({ _id: match.team2._id }, { $inc: { lose: 1 } });
       await Match.updateOne({ _id: match._id }, { isWinner: match.team1._id });
-      winner = match.team1._id;
     } else if (scoreTeam2 > scoreTeam1) {
       await Team.updateOne({ _id: match.team2._id }, { $inc: { win: 1 } });
       await Team.updateOne({ _id: match.team1._id }, { $inc: { lose: 1 } });
       await Match.updateOne({ _id: match._id }, { isWinner: match.team2._id });
-      winner = match.team2._id;
     } else if (scoreTeam2 == scoreTeam1) {
       await Team.updateOne({ _id: match.team2._id }, { $inc: { nul: 1 } });
       await Team.updateOne({ _id: match.team1._id }, { $inc: { nul: 1 } });
@@ -343,12 +341,12 @@ const updateTeamWin = async (match) => {
         console.log(nextM);
         if (nextM) {
           if (!nextM.team1) {
-            await Match.findByIdAndUpdate(nextM._id, { team1: winner });
+            await Match.findByIdAndUpdate(nextM._id, { team1: match.isWinner });
           } else {
-            await Match.findByIdAndUpdate(nextM._id, { team2: winner });
+            await Match.findByIdAndUpdate(nextM._id, { team2: match.isWinner });
           }
         } else {
-          await Tournament.updateOne(
+          await tournamentController.updateOne(
             { _id: match.tournament._id },
             { tournamentWinner: match.isWinner }
           );

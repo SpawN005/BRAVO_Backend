@@ -88,8 +88,7 @@ const userSchema = mongoose.Schema({
   ],
 });
 
-const User = mongoose.model("Users", userSchema);
-
+User = mongoose.model("Users", userSchema);
 //-------------------------------------------------------
 exports.createUser = (userData) => {
   const user = new User(userData);
@@ -251,4 +250,4 @@ exports.getTournaments = async (id) => {
     throw error;
   }
 };
-//module.exports=User;
+

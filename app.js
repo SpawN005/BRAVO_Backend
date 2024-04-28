@@ -75,16 +75,22 @@ app.post("/api/v1/create-subscription-checkout-session", async (req, res) => {
   
   try {
     const session = await stripeSession(planId);
+    const user = await User.findById(userId);
 
-    const updatedUser = await User.findOneAndUpdate(
-      { _id: userId },
-      { $set: { 'abonnement.sessionId': session.id } },
-      { new: true }
-    );
-
-    if (!updatedUser) {
+    if (!user) {
+      console.log("Utilisateur non trouvé.");
       return res.status(404).json({ error: 'User not found' });
     }
+
+    // Assurez-vous que user.abonnement est initialisé
+    
+
+    user.abonnement.sessionId = session.id;
+    
+  
+    const updatedUser = await User.patchUser(userId,user);
+    
+    console.log("Utilisateur mis à jour avec succès :", updatedUser);
 
     res.json(session); 
   } catch (error) {
@@ -92,6 +98,7 @@ app.post("/api/v1/create-subscription-checkout-session", async (req, res) => {
     res.status(500).json({ error: 'Failed to create checkout session' });
   }
 });
+
 
 
 app.post("/api/v1/payment-success", async (req, res) => {
@@ -109,24 +116,25 @@ app.post("/api/v1/payment-success", async (req, res) => {
 
         const planType = subscription.plan.amount === 1000000 ? "pass" : "premium";
         const endDate = moment.unix(subscription.current_period_end).format('YYYY-MM-DD');
-        const updatedUser = await User.findOneAndUpdate(
-          { _id: userId },
-          {
-            $set: {
-              'abonnement.planId': planId,
-              'abonnement.endDate': endDate,
-              'abonnement.status': 'active', 
-              'abonnement.price': subscription.plan.amount,
-              'abonnement.startDate':Date.now(),
-              'abonnement.planType': planType,
+        const user = await User.findById(userId);
 
-            }
-          },
-          { new: true }
-        );
-        if (!updatedUser) {
-          return res.status(404).json({ error: 'User not found' });
+        if (user) {
+          // Ajoutez les nouvelles valeurs à l'objet abonnement
+          user.abonnement.planId = planId;
+          user.abonnement.endDate = endDate;
+          user.abonnement.status = 'active';
+          user.abonnement.price = subscription.plan.amount;
+          user.abonnement.startDate = Date.now();
+          user.abonnement.planType = planType;
+        
+          // Enregistrez les modifications
+          const updatedUser = await User.patchUser(userId,user);
+          
+        } else {
+          console.log("Utilisateur non trouvé.");
         }
+        
+        
         
 
           
