@@ -147,27 +147,20 @@ const assistOnly = async (idmatch, idplayer, idteam) => {
 
         if (existingAssister) {
           // Player is already in the assisters array, update their assist
-          existingAssister.assist = (existingAssister.assist || 0) + 1;
+          existingAssister.assists = (existingAssister.assists || 0) + 1;
 
           // Save the updated assist to the Player model
           await Player.findByIdAndUpdate(
             assisterPlayerId,
-            { $inc: { assist: 1 } },
+            { $inc: { assists: 1 } },
             { new: true }
           );
         } else {
           // Player is not in the assisters array, add them
           assistingTeamStats.assisters.push({
             player: assisterPlayerId,
-            assist: 1,
+            assists: 1,
           });
-
-          // Save the updated assists to the Player model
-          await Player.findByIdAndUpdate(
-            assisterPlayerId,
-            { $inc: { assist: 1 } },
-            { new: true }
-          );
         }
 
         console.log("Updated assistingTeamStats:", assistingTeamStats);
@@ -282,7 +275,7 @@ const updateTeamWin = async (match) => {
         team2Standings.gamesPlayed += 1;
 
         if (match.isWinner === match.team1) {
-          team1Standings.points += 3;
+          team1Standings.points += tournament.rules.pointsPerWin;
           team1Standings.wins += 1;
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
@@ -297,7 +290,7 @@ const updateTeamWin = async (match) => {
             team2Standings.goalsFor - team2Standings.goalsAgainst
           );
         } else if (match.isWinner === "DRAW") {
-          team1Standings.points += 1;
+          team1Standings.points += tournament.rules.pointsPerDraw;
           team1Standings.draws += 1;
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
@@ -305,7 +298,7 @@ const updateTeamWin = async (match) => {
             team1Standings.goalsFor - team1Standings.goalsAgainst
           );
 
-          team2Standings.points += 1;
+          team2Standings.points += tournament.rules.pointsPerDraw;
           team2Standings.draws += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
@@ -313,7 +306,7 @@ const updateTeamWin = async (match) => {
             team2Standings.goalsFor - team2Standings.goalsAgainst
           );
         } else {
-          team2Standings.points += 3;
+          team2Standings.points += tournament.rules.pointsPerWin;
           team2Standings.wins += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
@@ -518,7 +511,11 @@ const addYellowCard = async (idmatch, idplayer, idteam) => {
 
     if (existingPlayer) {
       // Player is already in the yellowCards array, update their yellowCards count
-      existingPlayer.yellowCards += 1;
+      if (existingPlayer.cards === 2) {
+        addRedCard(idmatch, idplayer, idteam);
+        return;
+      }
+      existingPlayer.cards += 1;
     } else {
       // Player is not in the yellowCards array, add them
       const player = await Player.findById(playerId);
@@ -527,8 +524,7 @@ const addYellowCard = async (idmatch, idplayer, idteam) => {
       }
       teamStats.yellowCards.push({
         player: playerId,
-        firstName: player.firstName,
-        yellowCards: 1,
+        cards: 1,
       });
     }
 

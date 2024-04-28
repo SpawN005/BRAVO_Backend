@@ -40,7 +40,9 @@ const getMatch = async (matchId) => {
 const getMatchById = async (matchId) => {
   try {
     // Find the match by ID
-    const match = await Match.findById(matchId);
+    const match = await Match.findById(matchId).populate({
+      path: "stadium referee",
+    });
     console.log(match);
     if (!match) {
       throw { status: 404, message: "Match not found" };
