@@ -231,7 +231,7 @@ const updateTeamWin = async (match) => {
     // Récupérer les statistiques du match pour chaque équipe
     const matchStatsTeam1 = await getMatchStats(match._id, match.team1._id);
     const matchStatsTeam2 = await getMatchStats(match._id, match.team2._id);
-   
+
     // Vérifier le score de chaque équipe
     const scoreTeam1 = matchStatsTeam1.score;
     const scoreTeam2 = matchStatsTeam2.score;
@@ -255,12 +255,8 @@ const updateTeamWin = async (match) => {
     await Match.updateOne({ _id: match._id }, { status: "FINISHED" });
     console.log(match.stage);
     switch (match.stage) {
-<<<<<<< HEAD
       case "LEAGUE":
       case "GROUP_STAGE":
-=======
-      case "LEAGUE" || "GROUP_STAGE":
->>>>>>> 41618beb3073bac38feca81a5686006b3cf7e2cc
         const tournament = await Tournament.findById(match.tournament._id);
 
         const team1Standings = tournament.standings.find(
@@ -273,11 +269,8 @@ const updateTeamWin = async (match) => {
         if (!team1Standings || !team2Standings) {
           throw new Error("Standings not found for one or both teams");
         }
-<<<<<<< HEAD
         team1Standings.gamesPlayed += 1;
         team2Standings.gamesPlayed += 1;
-=======
->>>>>>> 41618beb3073bac38feca81a5686006b3cf7e2cc
 
         if (match.isWinner === match.team1) {
           team1Standings.points += tournament.rules.pointsPerWin;
@@ -285,39 +278,39 @@ const updateTeamWin = async (match) => {
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
           team1Standings.goalDifference =
-          team1Standings.goalsFor - team1Standings.goalsAgainst;
+            team1Standings.goalsFor - team1Standings.goalsAgainst;
 
           team2Standings.losses += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference =
-          team2Standings.goalsFor - team2Standings.goalsAgainst;
+            team2Standings.goalsFor - team2Standings.goalsAgainst;
         } else if (match.isWinner === "DRAW") {
           team1Standings.points += tournament.rules.pointsPerDraw;
           team1Standings.draws += 1;
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
           team1Standings.goalDifference =
-          team1Standings.goalsFor - team1Standings.goal;
+            team1Standings.goalsFor - team1Standings.goal;
 
           team2Standings.points += tournament.rules.pointsPerDraw;
           team2Standings.draws += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference =
-          team2Standings.goalsFor - team2Standings.goal;
+            team2Standings.goalsFor - team2Standings.goal;
         } else {
           team2Standings.points += tournament.rules.pointsPerWin;
           team2Standings.wins += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference =
-          team2Standings.goalsFor - team2Standings.goal;
+            team2Standings.goalsFor - team2Standings.goal;
 
           team1Standings.losses += 1;
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
-          team1Standings.goalDifference = 
+          team1Standings.goalDifference =
             team1Standings.goalsFor - team1Standings.goalsAgainst;
         }
 

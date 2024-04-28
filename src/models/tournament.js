@@ -128,6 +128,9 @@ const tournamentSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Teams",
   },
+  logo: {
+    type: String,
+  },
   groups: [groupSchema], // Array of group objects
   sponsors: [sponsorSchema],
   matches: [

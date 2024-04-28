@@ -22,6 +22,7 @@ var TournamentsController = {
       location: req.body.location,
       rules: req.body.rules,
       groups: req.body.groups,
+      logo: req.body.logo,
     };
 
     const teamsPerPool = tournamentData.rules.teamsPerPool;
@@ -53,6 +54,7 @@ var TournamentsController = {
       await newTournament.save();
       switch (tournamentData.rules.type) {
         case "GROUP_KNOCKOUT":
+        case "KNOCKOUT":
           break;
         default:
           await createGroupMatches(newTournament._id);
@@ -103,7 +105,6 @@ var TournamentsController = {
         res.status(200).send(tournament);
       });
   },
-  
 
   getByIdOwner: async function (req, res) {
     try {
@@ -189,7 +190,11 @@ var TournamentsController = {
           return res.status(404).send({ message: "Tournament not found" });
         }
         try {
-          await createGroupKnockoutMatches(id);
+          if (updatedTournament.rules.type === "GROUP_KNOCKOUT") {
+            await createGroupKnockoutMatches(id);
+          } else {
+            await createGroupMatches(id);
+          }
         } catch (error) {
           console.error(
             "Error occurred while Creating group knockout groups:",
