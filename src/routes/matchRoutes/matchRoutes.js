@@ -1,11 +1,10 @@
 const express = require("express");
 const MatchController = require("../../controllers/match.controller");
-const MatchStatController = require("../../controllers/matchStat.controller");
-const matchStats = require("../../models/matchStats");
+const TournamentsController = require("../../controllers/TournamentController");
+const tournament = require("../../models/tournament");
+
 
 const router = express.Router();
-const ValidationMiddleware = require("../../middlewares/validation/validation.middleware");
-const { getMatchStats } = require("../../controllers/matchStat.controller");
 
 router.get("/tournaments/:tournamentId", async (req, res) => {
   try {
@@ -117,6 +116,7 @@ router.get("/myteam/:teamId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
+
 router.get("/bracket/:tournamentId", async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
@@ -127,6 +127,19 @@ router.get("/bracket/:tournamentId", async (req, res) => {
     res.status(200).json(matches);
   } catch (error) {
     console.error("Error fetching matches:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
+router.get("/goupknockout/gettopteams/:tournamentId", async (req, res) => {
+  try {
+    const tournamentId = req.params.tournamentId;
+    const Tournament = await tournament.findById(tournamentId);
+    const topTeamsPerGroup =MatchController.determineTopTeams(Tournament.groups,Tournament.standings,1)
+    res.status(200).json(topTeamsPerGroup);
+  } catch (error) {
+    console.error("Error fetching top teams:", error);
     res
       .status(error.status || 500)
       .json({ message: error.message || "Internal Server Error" });
@@ -147,6 +160,7 @@ router.get("/:matchId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
+
 
 router.patch("update-date/:matchId", async (req, res) => {
   try {
@@ -216,8 +230,7 @@ router.patch("/patch/:id", async (req, res) => {
     res.status(200).json(updatedMatch);
   } catch (error) {
     console.error("Error updating match date by ID:", error);
-    res
-      .status(error.status || "500")
+    res.status(error.status || 500)
       .json({ message: error.message || "Internal Server Error" });
   }
 });

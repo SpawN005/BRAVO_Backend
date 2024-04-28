@@ -8,6 +8,7 @@ router.get("/", stadiumController.getAllStadiums);
 
 // Get a single stadium by ID
 router.get("/:id", stadiumController.getStadiumById);
+router.get("/available/:date", stadiumController.getAvailableStadiums);
 
 // Create a new stadium
 router.post("/", stadiumController.createStadium);

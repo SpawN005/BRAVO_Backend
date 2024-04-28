@@ -11,6 +11,10 @@ const initializeGetRoutes = (app) => {
     "/tournament/standings/:tournamentId",
     TournamentsController.getStandings
   );
+  app.get(
+    "/tournaments/status/:status",
+    TournamentsController.getTournamentsByStatus
+  );
 };
 
 module.exports = initializeGetRoutes;

@@ -103,6 +103,7 @@ var TournamentsController = {
         res.status(200).send(tournament);
       });
   },
+  
 
   getByIdOwner: async function (req, res) {
     try {
@@ -124,6 +125,38 @@ var TournamentsController = {
       res
         .status(500)
         .send({ message: "Error occurred while retrieving the tournaments" });
+    }
+  },
+  getTournamentsByStatus: async function (req, res) {
+    try {
+      const status = req.params.status;
+
+      const tournaments = await TournamentModel.find();
+
+      const tournamentsWithStatus = [];
+      const currentDate = new Date();
+      for (const t of tournaments) {
+        const startDate = new Date(t.startDate);
+        const endDate = new Date(t.endDate);
+
+        let tournamentStatus;
+        if (currentDate < startDate) {
+          tournamentStatus = "UPCOMING";
+        } else if (currentDate >= startDate && currentDate <= endDate) {
+          tournamentStatus = "ONGOING";
+        } else {
+          tournamentStatus = "FINISHED";
+        }
+
+        if (tournamentStatus === status) {
+          tournamentsWithStatus.push(t);
+        }
+      }
+
+      res.status(200).send(tournamentsWithStatus);
+    } catch (error) {
+      console.error("Error getting tournaments by status:", error);
+      res.status(500).send({ message: "Error getting tournaments by status" });
     }
   },
   removeById: function (req, res) {

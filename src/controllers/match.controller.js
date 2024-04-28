@@ -5,6 +5,7 @@ const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
 const matchStats = require("../models/matchStats");
+const matches = require("../models/matches");
 
 // Initialize Socket.IO instance (assuming you have already created an HTTP server)
 async function getMatchesByTeamId(teamId) {
@@ -15,6 +16,25 @@ async function getMatchesByTeamId(teamId) {
     return matches;
   } catch (error) {
     console.error("Error fetching matches by team ID:", error);
+    throw error;
+  }
+}
+async function getMatcheByTeams(teamId1,teamId2,tournamentId) {
+  try {
+    const matches = await Match.find({
+      $and: [
+        {
+          tournament: tournamentId,
+          $or: [
+            { $and: [{ team1: teamId1 }, { team2: teamId2 }] },
+            { $and: [{ team1: teamId2 }, { team2: teamId1 }] }
+          ]
+        }
+      ]
+    }).populate("team1 team2");
+    return matches;
+  } catch (error) {
+    console.error("Error fetching matche by teams:", error);
     throw error;
   }
 }
@@ -36,6 +56,7 @@ const getMatch = async (matchId) => {
     };
   }
 };
+
 
 const getMatchById = async (matchId) => {
   try {
@@ -118,28 +139,7 @@ const getMatchById = async (matchId) => {
   }
 };
 
-const updateMatchDateById = async (matchId, newDate) => {
-  try {
-    // Find the match by ID and update its date
-    const updatedMatch = await Match.findByIdAndUpdate(
-      matchId,
-      { date: newDate },
-      { new: true }
-    );
 
-    if (!updatedMatch) {
-      throw { status: 404, message: "Match not found" };
-    }
-
-    return updatedMatch;
-  } catch (error) {
-    console.error("Error updating match date by ID:", error);
-    throw {
-      status: error.status || 500,
-      message: error.message || "Internal Server Error",
-    };
-  }
-};
 
 const getTournamentById = async (tournamentId) => {
   try {
@@ -480,32 +480,40 @@ const getMatchesByUserId = async (userId) => {
     throw { status: 500, message: "Internal Server Error" };
   }
 };
-// const determineTopTeams = (groups, standings, numTopTeams) => {
-//   const topTeamsPerGroup = {};
+const determineTopTeams = (tournamentId,groups, standings, numTopTeams) => {
+  const topTeamsPerGroup = {};
 
-//   groups.forEach((group) => {
-//     const teamIds = group.teams.map((team) => team._id.toString());
+  groups.forEach((group) => {
+    const teamIds = group.teams.map((team) => team._id.toString());
 
-//     const groupStandings = standings.filter((standing) =>
-//       teamIds.includes(standing.team.toString())
-//     );
-//     console.log(groupStandings);
-//     groupStandings.sort((a, b) => {
-//       if (a.points !== b.points) {
-//         return b.points - a.points; // Sort by points (descending)
-//       }
-//       // Add additional tie-breaking logic if needed
-//       // For example, comparing goal difference, goals scored, etc.
-//     });
+    const groupStandings = standings.filter((standing) =>
+      teamIds.includes(standing.team.toString())
+    );
+    console.log(groupStandings);
+    groupStandings.sort(async (a, b) => {
+      if (a.points !== b.points) {
+        return b.points - a.points; 
+      } else if (a.goalDifference !== b.goalDifference){
+        return (a.goalDifference > b.goalDifference) ? a : b
+      }else if (a.goalsFor !== b.goalsFor){
+        return b.goalsFor - a.goalsFor; 
+      }else {
+        const matches = await this.getMatcheByTeams(a.team._id, b.team._id,tournamentId);
+        const matchWinner = matches[0].isWinner;
+        return a.team._id.equals(matchWinner._id) ? a : b;
+      }
+     
+    });
 
-//     const topTeams = groupStandings
-//       .slice(0, numTopTeams)
-//       .map((standing) => standing.team);
-//     topTeamsPerGroup[group._id] = topTeams;
-//   });
+    const topTeams = groupStandings
+      .slice(0, numTopTeams)
+      .map((standing) => standing.team);
+    topTeamsPerGroup[group._id] = topTeams;
+  });
 
-//   console.log(topTeamsPerGroup);
-// };
+  console.log(topTeamsPerGroup);
+  return topTeamsPerGroup;
+};
 
 const createGroupKnockoutMatches = async (tournamentId) => {
   try {
@@ -624,11 +632,12 @@ module.exports = {
   createGroupMatches,
   getAllMatchesForTournament,
   getMatchById,
-  updateMatchDateById,
   getMatchesByUserId,
   getBracketForTournament,
   patchTMatchById,
   getMatchesByTeamId,
   getMatch,
   getLiveMatches,
+  getMatcheByTeams,
+  determineTopTeams
 };
