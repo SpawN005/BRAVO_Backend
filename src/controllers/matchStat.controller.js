@@ -34,6 +34,97 @@ const getMatchStatsByMatchId = async (matchId, teamId1, teamId2) => {
   }
 };
 
+const getMatchStatsByMatchIdPost = async (matchId) => {
+  try {
+    const matchStatsTeam1 = await MatchStats.findOne({ match: matchId });
+    const matchStatsTeam2 = await MatchStats.findOne({ match: matchId, team: { $ne: matchStatsTeam1.team } });
+
+    if (!matchStatsTeam1 || !matchStatsTeam2) {
+      throw { status: 404, message: "Match stats not found" };
+    }
+
+    // Fetch team names
+    const team1 = await Team.findById(matchStatsTeam1.team);
+    const team2 = await Team.findById(matchStatsTeam2.team);
+
+// Fetch player names for team1
+const scorersTeam1 = await Promise.all(matchStatsTeam1.scorers.map(async (playerId) => {
+  const player = await Player.findById(playerId);
+  console.log(player)
+  if (player) {
+    return `${player.firstName} ${player.lastName}`;
+  }
+  return null;
+}));
+
+// Fetch player names for team2
+const scorersTeam2 = await Promise.all(matchStatsTeam2.scorers.map(async (playerId) => {
+  const player = await Player.findById(playerId);
+  console.log(player)
+
+  if (player) {
+    return `${player.firstName} ${player.lastName}`;
+  }
+  return playerId; // Or handle as per your requirements
+}));
+
+
+// Fetch player names for team1
+const redCardsTeam1 = await Promise.all(matchStatsTeam1.redCards.map(async (playerId) => {
+  const player = await Player.findById(playerId);
+  if (player) {
+    return `${player.firstName} ${player.lastName}`;
+  }
+  return null; // Or handle as per your requirements
+}));
+
+// Fetch player names for team2
+const yellowCardsTeam2 = await Promise.all(matchStatsTeam2.yellowCards.map(async (playerId) => {
+  const player = await Player.findById(playerId);
+  if (player) {
+    return `${player.firstName} ${player.lastName}`;
+  }
+  return null; // Or handle as per your requirements
+}));
+
+// Fetch player names for team2
+const assistersTeam2 = await Promise.all(matchStatsTeam2.assisters.map(async (playerId) => {
+  const player = await Player.findById(playerId);
+  if (player) {
+    return `${player.firstName} ${player.lastName}`;
+  }
+  return null; // Or handle as per your requirements
+}));
+
+// Replace IDs with names
+const matchStatsTeam1WithNames = {
+  ...matchStatsTeam1.toObject(),
+  team: team1.name,
+  scorers: scorersTeam1,
+  redCards: redCardsTeam1,
+};
+const matchStatsTeam2WithNames = {
+  ...matchStatsTeam2.toObject(),
+  team: team2.name,
+  scorers: scorersTeam2,
+  yellowCards: yellowCardsTeam2,
+  assisters: assistersTeam2,
+};
+
+
+    console.log("team1", matchStatsTeam1WithNames);
+    console.log("team2", matchStatsTeam2WithNames);
+
+    return { matchStatsTeam1: matchStatsTeam1WithNames, matchStatsTeam2: matchStatsTeam2WithNames };
+  } catch (error) {
+    console.error("Error getting match stats by match ID:", error);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
+  }
+};
+
 const scoreGoal = async (idmatch, idplayer1, idteam) => {
   try {
     // Find the match using matchId and populate team stats
@@ -629,4 +720,5 @@ module.exports = {
   startMatch,
   getMatch,
   getMatchStatsByMatchId,
+  getMatchStatsByMatchIdPost
 };
