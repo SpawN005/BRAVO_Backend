@@ -1,4 +1,5 @@
 var UserModel = require("../models/users");
+var MatchModel=require("../models/matches")
 var crypto = require("crypto");
 const { generateRandomPassword } = require("../utils/passwordUtils"); // Adjust the path as needed
 
@@ -225,6 +226,32 @@ exports.getObservers = (req, res) => {
       })
     );
 };
+exports.getAvailableObservers = async (req, res) => {
+  try {
+    const observers = await UserModel.findByPermissionLevel(1);
+    
+    const matches = await MatchModel.findByDate(req.params.date);
+    const assignedObserverIds = matches.map(match => match.observer);
+    const availableObservers = observers.filter(observer => {
+      return !assignedObserverIds.find(id => id.equals(observer._id));
+    });
+    
+    res.status(200).send({
+      code: 200,
+      status: "success",
+      data: availableObservers,
+    });
+  } catch (error) {
+    console.error("Error fetching available observers:", error);
+    res.status(500).send({
+      code: 500,
+      status: "error",
+      message: "An error occurred while fetching available observers",
+      error: error.message,
+    });
+  }
+};
+
 exports.getReferees = (req, res) => {
   UserModel.findByPermissionLevel(2)
     .then((users) => {
@@ -251,6 +278,29 @@ exports.getReferees = (req, res) => {
         error: error,
       })
     );
+};
+exports.getAvailableReferees = async (req, res) => {
+  try {
+    const referees = await UserModel.findByPermissionLevel(2);
+    const matches = await MatchModel.findByDate(req.params.date);
+    const assignedRefereeIds = matches.map(match => match.referee);
+    const availablReferees = referees.filter(referee => {
+      return !assignedRefereeIds.find(id => id.equals(referee._id));
+    });
+        res.status(200).send({
+      code: 200,
+      status: "success",
+      data: availablReferees,
+    });
+  } catch (error) {
+    console.error("Error fetching available observers:", error);
+    res.status(500).send({
+      code: 500,
+      status: "error",
+      message: "An error occurred while fetching available observers",
+      error: error.message,
+    });
+  }
 };
 exports.getRefereesByTournamentId = (req, res) => {
   UserModel.findByTournamentId(req.params.tournamentId)

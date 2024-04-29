@@ -62,4 +62,21 @@ const matchSchema = new mongoose.Schema({
   },
 });
 
+matchSchema.statics.findByDate = function (date) {
+  return new Promise((resolve, reject) => {
+    const givenDate = new Date(date);
+    const twoHoursAgo = new Date(givenDate);
+    twoHoursAgo.setHours(givenDate.getHours() - 2);
+    const twoHoursLater = new Date(givenDate);
+    twoHoursLater.setHours(givenDate.getHours() + 2);
+    
+    this.find({ date: { $gte: twoHoursAgo, $lte: twoHoursLater } })
+      .exec(function (err, matches) {
+        
+          resolve(matches);
+        
+      });
+  });
+};
+
 module.exports = mongoose.model("Matches", matchSchema);

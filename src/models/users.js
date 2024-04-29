@@ -223,7 +223,11 @@ exports.getTournaments = async (id) => {
   try {
     const user = await User.findOne({ _id: id }).populate({
       path: "tournamentIds",
-      select: "name",
+      select: "name tournamentWinner",
+      populate: {
+        path: "tournamentWinner",
+        select: "name -_id",
+      },
     });
 
     return user;

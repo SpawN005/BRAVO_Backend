@@ -1,7 +1,6 @@
 const StadiumsController = require("../../controllers/stadiums.controller");
 const ValidationMiddleware = require("../../middlewares/validation/validation.middleware");
 
-
 const initializeGetRoutes = (app) => {
   /**
    * @swagger
@@ -57,6 +56,9 @@ const initializeGetRoutes = (app) => {
    *       400:
    *         description: Bad request
    */
+  app.get("/stadium/available/:date", [
+    StadiumsController.getAvailableStadiums,
+  ]);
   app.get("/stadiums", [
     ValidationMiddleware.validJWTNeeded,
     StadiumsController.getAllStadiums,

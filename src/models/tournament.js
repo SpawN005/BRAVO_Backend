@@ -35,7 +35,8 @@ const standingsSchema = new mongoose.Schema({
   goalDifference: {
     type: Number,
     default: 0,
-  }, gamesPlayed: {
+  },
+  gamesPlayed: {
     type: Number,
     default: 0,
   },
@@ -123,6 +124,13 @@ const tournamentSchema = new mongoose.Schema({
   rules: {
     type: ruleSchema,
   },
+  tournamentWinner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Teams",
+  },
+  logo: {
+    type: String,
+  },
   groups: [groupSchema], // Array of group objects
   sponsors: [sponsorSchema],
   matches: [
@@ -131,10 +139,6 @@ const tournamentSchema = new mongoose.Schema({
       ref: "Matches",
     },
   ],
-  tournamentWinner: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Teams",
-  },
   standings: {
     type: [standingsSchema],
     default: function () {
@@ -199,6 +203,103 @@ tournamentSchema.statics.findByOwner = async function (ownerId) {
     throw new Error(
       "Error finding tournaments for the owner: " + error.message
     );
+  }
+};
+tournamentSchema.methods.getSortedStandings = function () {
+  const groupedStandings = {};
+
+  for (const group of this.groups) {
+    const groupStandings = this.standings.filter((standing) =>
+      group.teams.some((team) => team._id.equals(standing.team._id))
+    );
+
+    groupStandings.sort((a, b) => {
+      if (a.points !== b.points) {
+        return b.points - a.points;
+      } else if (a.goalDifference !== b.goalDifference) {
+        return b.goalDifference - a.goalDifference;
+      } else {
+        return b.goalsFor - a.goalsFor;
+      }
+    });
+
+    groupedStandings[group.name] = groupStandings;
+  }
+
+  return groupedStandings;
+};
+tournamentSchema.statics.StandingsUpdate = async function (
+  tournamentId,
+  scoreTeam1,
+  scoreTeam2,
+  match
+) {
+  try {
+    const tournament = await this.findById(tournamentId);
+
+    const team1Standings = tournament.standings.find(
+      (standing) => String(standing.team) === String(match.team1)
+    );
+    const team2Standings = tournament.standings.find(
+      (standing) => String(standing.team) === String(match.team2)
+    );
+
+    if (!team1Standings || !team2Standings) {
+      throw new Error("Standings not found for one or both teams");
+    }
+
+    if (match.isWinner === match.team1) {
+      team1Standings.points += tournament.rules.pointsPerWin;
+      team1Standings.wins += 1;
+      team1Standings.goalsFor += scoreTeam1;
+      team1Standings.goalsAgainst += scoreTeam2;
+      team1Standings.goalDifference = Math.abs(
+        team1Standings.goalsFor - team1Standings.goalsAgainst
+      );
+
+      team2Standings.losses += 1;
+      team2Standings.goalsFor += scoreTeam2;
+      team2Standings.goalsAgainst += scoreTeam1;
+      team2Standings.goalDifference = Math.abs(
+        team2Standings.goalsFor - team2Standings.goalsAgainst
+      );
+    } else if (match.isWinner === "DRAW") {
+      team1Standings.points += tournament.rules.pointsPerDraw;
+      team1Standings.draws += 1;
+      team1Standings.goalsFor += scoreTeam1;
+      team1Standings.goalsAgainst += scoreTeam2;
+      team1Standings.goalDifference = Math.abs(
+        team1Standings.goalsFor - team1Standings.goalsAgainst
+      );
+
+      team2Standings.points += tournament.rules.pointsPerDraw;
+      team2Standings.draws += 1;
+      team2Standings.goalsFor += scoreTeam2;
+      team2Standings.goalsAgainst += scoreTeam1;
+      team2Standings.goalDifference = Math.abs(
+        team2Standings.goalsFor - team2Standings.goalsAgainst
+      );
+    } else {
+      team2Standings.points += tournament.rules.pointsPerWin;
+      team2Standings.wins += 1;
+      team2Standings.goalsFor += scoreTeam2;
+      team2Standings.goalsAgainst += scoreTeam1;
+      team2Standings.goalDifference = Math.abs(
+        team2Standings.goalsFor - team2Standings.goalsAgainst
+      );
+
+      team1Standings.losses += 1;
+      team1Standings.goalsFor += scoreTeam1;
+      team1Standings.goalsAgainst += scoreTeam2;
+      team1Standings.goalDifference = Math.abs(
+        team1Standings.goalsFor - team1Standings.goalsAgainst
+      );
+    }
+
+    await tournament.save();
+    return tournament;
+  } catch (error) {
+    throw new Error("Error updating tournament standings: " + error.message);
   }
 };
 

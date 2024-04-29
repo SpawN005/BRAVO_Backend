@@ -13,10 +13,9 @@ class Team(BaseModel):
 
 
 @app.post("/group-teams")
-async def group_teams(teams: List, num_groups: int = 2):
+async def group_teams(teams: List, num_teams: int = 2):
     try:
-        print(teams)
-        matched_teams = dynamic_grouping_based_on_performance(teams, num_groups)
+        matched_teams = dynamic_grouping_based_on_performance(teams, num_teams)
         return matched_teams
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
