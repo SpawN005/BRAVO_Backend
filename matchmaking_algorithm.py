@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 def dynamic_grouping_based_on_performance(teams, num_teams_per_group):
-    performance_metrics = [[team["tournament_won"], team["goals"], team["matches_won"]] for team in teams]
+    performance_metrics = [[team["score"], team["win"], team["lose"]] for team in teams]
     performance_metrics_normalized = np.array(performance_metrics) / np.max(performance_metrics, axis=0)
 
     weights = [3, 2, 1]  

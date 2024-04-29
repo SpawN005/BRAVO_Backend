@@ -6,11 +6,6 @@ from matchmaking_algorithm import dynamic_grouping_based_on_performance
 
 app = FastAPI()
 
-class Team(BaseModel):
-    tournament_won: int
-    goals: int
-    matches_won: int
-
 
 @app.post("/group-teams")
 async def group_teams(teams: List, num_teams: int = 2):

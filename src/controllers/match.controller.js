@@ -590,6 +590,7 @@ const createGroupKnockoutMatches = async (tournamentId) => {
 };
 const patchTMatchById = async (id, updates) => {
   try {
+    console.log("updates: ",updates)
     const updatedMatch = await Match.findByIdAndUpdate(id, updates, {
       new: true,
     });

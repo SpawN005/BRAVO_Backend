@@ -155,7 +155,7 @@ tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
   }
 
   const nbGroups = Math.ceil(teams.length / teamsPerPool);
-
+ 
   const groups = [];
   for (let i = 0; i < nbGroups; i++) {
     const groupName = `Group ${i + 1}`;
