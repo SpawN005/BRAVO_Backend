@@ -274,7 +274,7 @@ const updateTeamWin = async (match) => {
         }
         team1Standings.gamesPlayed += 1;
         team2Standings.gamesPlayed += 1;
-
+        console.log(tournament.rules.pointsPerWin);
         if (match.isWinner === match.team1) {
           team1Standings.points += tournament.rules.pointsPerWin;
           team1Standings.wins += 1;
@@ -294,21 +294,21 @@ const updateTeamWin = async (match) => {
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
           team1Standings.goalDifference =
-            team1Standings.goalsFor - team1Standings.goal;
+            team1Standings.goalsFor - team1Standings.goalsAgainst;
 
           team2Standings.points += tournament.rules.pointsPerDraw;
           team2Standings.draws += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference =
-            team2Standings.goalsFor - team2Standings.goal;
+            team2Standings.goalsFor - team2Standings.goalsAgainst;
         } else {
           team2Standings.points += tournament.rules.pointsPerWin;
           team2Standings.wins += 1;
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference =
-            team2Standings.goalsFor - team2Standings.goal;
+            team2Standings.goalsFor - team2Standings.goalsAgainst;
 
           team1Standings.losses += 1;
           team1Standings.goalsFor += scoreTeam1;
