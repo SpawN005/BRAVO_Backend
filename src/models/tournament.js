@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 const User = require("./users.js");
+const teamModel = require("./team.js");
+const axios = require('axios');
+
 
 const type = ["LEAGUE", "KNOCKOUT", "GROUP_KNOCKOUT"];
 const breakingRules = ["NOP", "GD", "GS", "HTH", "MW", "CG"];
@@ -153,32 +156,68 @@ const tournamentSchema = new mongoose.Schema({
 });
 
 tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
-  console.log(teamsPerPool);
   if (!teams || teams.length === 0 || !teamsPerPool) {
     throw new Error("Invalid teams or teamsPerPool provided");
   }
+  
+  try {
+    const teamsgroup= await teamModel.find({ _id: { $in: teams } }).select('_id win lose score').lean();
+    const transformedTeams = teamsgroup.map(team => ({
+      _id: team._id.toString(),
+      score: team.score,
+      win: team.win,
+      lose: team.lose
+    }));
+    
+    const teamsgroupJson = JSON.stringify(transformedTeams);
+    console.log("ttttttttt",teamsgroupJson)
 
-  const nbGroups = Math.ceil(teams.length / teamsPerPool);
- 
-  const groups = [];
-  for (let i = 0; i < nbGroups; i++) {
-    const groupName = `Group ${i + 1}`;
-    const groupTeamSlice = teams.slice(
-      i * teamsPerPool,
-      (i + 1) * teamsPerPool
+
+    const response = await axios.post(
+      'http://127.0.0.1:8000/group-teams',
+      teamsgroupJson,
+      {
+        params: {
+          num_teams: teamsPerPool
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
     );
+    // Process the response from the Python endpoint
+    if (response.status === 200) {
+      const groups = response.data;
+      console.log(groups)
+      // Generate group names dynamically
+      const numGroups = groups.length;
+      const groupNames = Array.from({ length: numGroups }, (_, i) => `Group ${i + 1}`);
 
-    const group = new groupModel({
-      name: groupName,
-      teams: groupTeamSlice.map((team) => team),
-    });
+      // Create groups using received data
+      const createdGroups = [];
+      groups.forEach((groupData, index) => {
+        const groupName = groupNames[index];
+        const groupTeamSlice = groupData;
+        
+        const group = new groupModel({
+          name: groupName,
+          teams: groupTeamSlice.map((team) => team),
+        });
 
-    await group.save();
-    groups.push(group);
+        createdGroups.push(group);
+      });
+
+      return createdGroups;
+    } else {
+      throw new Error(`Failed to create groups. Status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error calling Python endpoint:", error); // Log the full error object
+
+    throw new Error(`Error calling Python endpoint: ${error.message}`);
   }
-
-  return groups;
 };
+
 tournamentSchema.statics.createGroup = async function (teams) {
   const groups = [];
   console.log(teams);
