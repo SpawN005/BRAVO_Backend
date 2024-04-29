@@ -29,9 +29,6 @@ jobs:
         uses: SonarSource/sonarcloud-github-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-
-  Docker:
-    runs-on: ubuntu-latest
     steps:
       - name: Build and Push Docker Image
         uses: mr-smithers-excellent/docker-build-push@v4
@@ -42,9 +39,6 @@ jobs:
           dockerfile: DockerFile
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-
-  Deploy:
-    runs-on: ubuntu-latest
     steps:
       - name: Deploy to production
         uses: johnbeynon/render-deploy-action@v0.0.8
