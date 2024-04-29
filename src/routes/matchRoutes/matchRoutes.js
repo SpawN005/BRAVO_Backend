@@ -2,8 +2,7 @@ const express = require("express");
 const MatchController = require("../../controllers/match.controller");
 const TournamentsController = require("../../controllers/TournamentController");
 const tournament = require("../../models/tournament");
-
-
+const Match = require("../../models/matches");
 const router = express.Router();
 
 router.get("/tournaments/:tournamentId", async (req, res) => {
@@ -136,7 +135,41 @@ router.get("/goupknockout/gettopteams/:tournamentId", async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
     const Tournament = await tournament.findById(tournamentId);
-    const topTeamsPerGroup =MatchController.determineTopTeams(Tournament.groups,Tournament.standings,1)
+    const topTeamsPerGroup = MatchController.determineTopTeams(
+      Tournament._id,
+      Tournament.groups,
+      Tournament.standings,
+      2
+    );
+
+    if (Tournament.rules.type === "LEAGUE") {
+      Tournament.tournamentWinner =
+        topTeamsPerGroup[Tournament.groups[0]._id.toString()][0];
+      Tournament.save();
+    } else {
+      const existingMatches = await Match.find({
+        tournament: tournamentId,
+        stage: "KNOCKOUT_STAGE",
+        round: 1,
+      }).sort({ _id: 1 });
+      const groupIds = Object.keys(topTeamsPerGroup);
+      const numGroups = groupIds.length;
+
+      // Pair top teams with second teams from other groups
+      for (let i = 0; i < numGroups; i++) {
+        const topTeams = topTeamsPerGroup[groupIds[i]];
+        const secondTeams = topTeamsPerGroup[groupIds[(i + 1) % numGroups]];
+
+        // Update matches with the top team and second team pairing
+        // Assume matches are pre-created in the database and are ordered as expected
+        if (existingMatches[i]) {
+          existingMatches[i].team1 = topTeams[0];
+          existingMatches[i].team2 = secondTeams[1];
+          await existingMatches[i].save();
+          console.log(existingMatches[i]);
+        }
+      }
+    }
     res.status(200).json(topTeamsPerGroup);
   } catch (error) {
     console.error("Error fetching top teams:", error);
@@ -160,7 +193,6 @@ router.get("/:matchId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
-
 
 router.patch("update-date/:matchId", async (req, res) => {
   try {
@@ -230,7 +262,8 @@ router.patch("/patch/:id", async (req, res) => {
     res.status(200).json(updatedMatch);
   } catch (error) {
     console.error("Error updating match date by ID:", error);
-    res.status(error.status || 500)
+    res
+      .status(error.status || 500)
       .json({ message: error.message || "Internal Server Error" });
   }
 });

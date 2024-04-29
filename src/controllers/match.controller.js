@@ -19,7 +19,7 @@ async function getMatchesByTeamId(teamId) {
     throw error;
   }
 }
-async function getMatcheByTeams(teamId1,teamId2,tournamentId) {
+async function getMatcheByTeams(teamId1, teamId2, tournamentId) {
   try {
     const matches = await Match.find({
       $and: [
@@ -27,10 +27,10 @@ async function getMatcheByTeams(teamId1,teamId2,tournamentId) {
           tournament: tournamentId,
           $or: [
             { $and: [{ team1: teamId1 }, { team2: teamId2 }] },
-            { $and: [{ team1: teamId2 }, { team2: teamId1 }] }
-          ]
-        }
-      ]
+            { $and: [{ team1: teamId2 }, { team2: teamId1 }] },
+          ],
+        },
+      ],
     }).populate("team1 team2");
     return matches;
   } catch (error) {
@@ -57,11 +57,12 @@ const getMatch = async (matchId) => {
   }
 };
 
-
 const getMatchById = async (matchId) => {
   try {
     // Find the match by ID
-    const match = await Match.findById(matchId);
+    const match = await Match.findById(matchId).populate({
+      path: "stadium referee",
+    });
     console.log(match);
     if (!match) {
       throw { status: 404, message: "Match not found" };
@@ -137,8 +138,6 @@ const getMatchById = async (matchId) => {
   }
 };
 
-
-
 const getTournamentById = async (tournamentId) => {
   try {
     const tournament = await Tournament.findById(tournamentId);
@@ -187,7 +186,7 @@ const getAllTeamsInTournament = async (tournamentId) => {
     const teams = [];
 
     // Check the type of the tournament
-    switch (tournament.rules?.type) {
+    switch (tournament?.rules?.type) {
       case "LEAGUE":
       case "GROUP_KNOCKOUT":
         // Iterate through groups and teams
@@ -228,7 +227,7 @@ const createGroupMatches = async (tournamentId) => {
       throw { status: 404, message: "Tournament not found" };
     }
 
-    if (tournament.rules?.type === "LEAGUE") {
+    if (tournament?.rules?.type === "LEAGUE") {
       const groupTeams = tournament.groups.flatMap((group) => group.teams);
 
       for (let i = 0; i < groupTeams.length - 1; i++) {
@@ -250,7 +249,7 @@ const createGroupMatches = async (tournamentId) => {
           matches.push(savedMatch);
         }
       }
-    } else if (tournament.rules?.type === "KNOCKOUT") {
+    } else if (tournament?.rules?.type === "KNOCKOUT") {
       for (const group of tournament.groups) {
         const groupTeams = group.teams.map((team) => team._id);
 
@@ -341,7 +340,9 @@ const getTeamById = async (teamId) => {
 const getAllMatchesForTournament = async (tournamentId) => {
   try {
     // Find all matches for the specified tournament ID
-    const matches = await Match.find({ tournament: tournamentId })
+    const matches = await Match.find({
+      tournament: tournamentId,
+    })
       .populate({
         path: "team1",
         select: "name stage logo",
@@ -360,7 +361,10 @@ const getBracketForTournament = async (tournamentId) => {
   console.log(tournamentId);
   try {
     // Find all matches for the specified tournament ID, sorted by round
-    const matches = await Match.find({ tournament: tournamentId })
+    const matches = await Match.find({
+      tournament: tournamentId,
+      stage: { $in: ["KNOCKOUT", "KNOCKOUT_STAGE"] },
+    })
       .sort({ round: 1 })
       .populate({
         path: "team1",
@@ -413,20 +417,30 @@ const getLiveMatches = async () => {
     const liveMatches = await Match.find({ status: "LIVE" }).populate(
       "team1 team2"
     );
-
+    console.log(liveMatches);
     // Parcourir chaque match en direct
-    const liveMatchesWithStats = await Promise.all(liveMatches.map(async match => {
-      // Obtenir les matchstats pour team1
-      const matchStatsTeam1 = await MatchStatController.getMatchStats(match._id, match.team1._id);
-      // Obtenir les matchstats pour team2
-      const matchStatsTeam2 = await MatchStatController.getMatchStats(match._id, match.team2._id);
+    const liveMatchesWithStats = await Promise.all(
+      liveMatches.map(async (match) => {
+        console.log("MatchStatController:", MatchStatController);
 
-      return {
-        ...match.toObject(), // Convertir l'objet match en objet javascript
-        matchStatsTeam1,
-        matchStatsTeam2
-      };
-    }));
+        // Obtenir les matchstats pour team1
+        const matchStatsTeam1 = await MatchStatController.getMatchStats(
+          match._id,
+          match.team1._id
+        );
+        // Obtenir les matchstats pour team2
+        const matchStatsTeam2 = await MatchStatController.getMatchStats(
+          match._id,
+          match.team2._id
+        );
+
+        return {
+          ...match.toObject(), // Convertir l'objet match en objet javascript
+          matchStatsTeam1,
+          matchStatsTeam2,
+        };
+      })
+    );
 
     return liveMatchesWithStats;
   } catch (error) {
@@ -465,7 +479,7 @@ const getMatchesByUserId = async (userId) => {
     throw { status: 500, message: "Internal Server Error" };
   }
 };
-const determineTopTeams = (tournamentId,groups, standings, numTopTeams) => {
+const determineTopTeams = (tournamentId, groups, standings, numTopTeams) => {
   const topTeamsPerGroup = {};
 
   groups.forEach((group) => {
@@ -474,20 +488,23 @@ const determineTopTeams = (tournamentId,groups, standings, numTopTeams) => {
     const groupStandings = standings.filter((standing) =>
       teamIds.includes(standing.team.toString())
     );
-    console.log(groupStandings);
+
     groupStandings.sort(async (a, b) => {
       if (a.points !== b.points) {
-        return b.points - a.points; 
-      } else if (a.goalDifference !== b.goalDifference){
-        return (a.goalDifference > b.goalDifference) ? a : b
-      }else if (a.goalsFor !== b.goalsFor){
-        return b.goalsFor - a.goalsFor; 
-      }else {
-        const matches = await this.getMatcheByTeams(a.team._id, b.team._id,tournamentId);
+        return b.points - a.points;
+      } else if (a.goalDifference !== b.goalDifference) {
+        return a.goalDifference > b.goalDifference ? a : b;
+      } else if (a.goalsFor !== b.goalsFor) {
+        return b.goalsFor - a.goalsFor;
+      } else {
+        const matches = await getMatcheByTeams(
+          a.team._id,
+          b.team._id,
+          tournamentId
+        );
         const matchWinner = matches[0].isWinner;
-        return a.team._id.equals(matchWinner._id) ? a : b;
+        return a.team._id.equals(matchWinner?._id) ? a : b;
       }
-     
     });
 
     const topTeams = groupStandings
@@ -496,7 +513,6 @@ const determineTopTeams = (tournamentId,groups, standings, numTopTeams) => {
     topTeamsPerGroup[group._id] = topTeams;
   });
 
-  console.log(topTeamsPerGroup);
   return topTeamsPerGroup;
 };
 
@@ -625,5 +641,5 @@ module.exports = {
   getMatch,
   getLiveMatches,
   getMatcheByTeams,
-  determineTopTeams
+  determineTopTeams,
 };

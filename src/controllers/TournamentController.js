@@ -22,6 +22,7 @@ var TournamentsController = {
       location: req.body.location,
       rules: req.body.rules,
       groups: req.body.groups,
+      logo: req.body.logo,
     };
 
     const teamsPerPool = tournamentData.rules.teamsPerPool;
@@ -53,10 +54,11 @@ var TournamentsController = {
       await newTournament.save();
       switch (tournamentData.rules.type) {
         case "GROUP_KNOCKOUT":
-          await createGroupKnockoutMatches(newTournament._id);
+        case "KNOCKOUT":
           break;
         default:
           await createGroupMatches(newTournament._id);
+          break;
       }
 
       res.status(201).send(newTournament);
@@ -81,7 +83,11 @@ var TournamentsController = {
     TournamentModel.findById(req.params.id)
       .populate({
         path: "standings",
-        populate: { path: "team" }, // Assuming "team" is the field referencing teams in the standings document
+        populate: { path: "team" },
+      })
+      .populate({
+        path: "groups.teams",
+        select: "name ",
       })
       .exec(function (err, tournament) {
         if (err) {
@@ -99,7 +105,6 @@ var TournamentsController = {
         res.status(200).send(tournament);
       });
   },
-  
 
   getByIdOwner: async function (req, res) {
     try {
@@ -177,16 +182,50 @@ var TournamentsController = {
       id,
       updates,
       { new: true },
-      function (err, updatedTournament) {
+      async function (err, updatedTournament) {
         if (err) {
           return res.status(500).send({ message: "Error updating tournament" });
         }
         if (!updatedTournament) {
           return res.status(404).send({ message: "Tournament not found" });
         }
+        try {
+          if (updatedTournament.rules.type === "GROUP_KNOCKOUT") {
+            await createGroupKnockoutMatches(id);
+          } else {
+            await createGroupMatches(id);
+          }
+        } catch (error) {
+          console.error(
+            "Error occurred while Creating group knockout groups:",
+            error
+          );
+          res.status(500).send({
+            message: "Error occurred while Creating group knockout groups",
+          });
+        }
         res.status(200).send(updatedTournament);
       }
     );
+  },
+  getStandings: async (req, res) => {
+    const { tournamentId } = req.params;
+
+    try {
+      const tournament = await TournamentModel.findById(tournamentId).populate({
+        path: "standings.team",
+        select: "name logo",
+      });
+      if (!tournament) {
+        return res.status(404).json({ message: "Tournament not found" });
+      }
+
+      const sortedStandings = tournament.getSortedStandings();
+
+      res.json(sortedStandings);
+    } catch (error) {
+      res.status(500).json({ message: "Server error", error: error.message });
+    }
   },
 };
 
