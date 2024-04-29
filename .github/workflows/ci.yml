@@ -47,4 +47,3 @@ jobs:
         with:
           service-id: ${{ secrets.RENDER_SERVICE }}
           api-key: ${{ secrets.RENDER_SECRET }}
-          wait-for-success: true
