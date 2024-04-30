@@ -37,7 +37,7 @@ app.use("/match-stats", matchStatsRoutes);
 // Create Socket.IO server
 const io = socketIO(server, {
   cors: {
-    origin: "http://localhost:3000", // Replace with your frontend URL
+    origin: "*", // Replace with your frontend URL
     methods: ["GET", "POST"],
   },
 });
