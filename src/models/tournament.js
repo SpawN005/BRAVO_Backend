@@ -1,8 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("./users.js");
 const teamModel = require("./team.js");
-const axios = require('axios');
-
+const axios = require("axios");
 
 const type = ["LEAGUE", "KNOCKOUT", "GROUP_KNOCKOUT"];
 const breakingRules = ["NOP", "GD", "GS", "HTH", "MW", "CG"];
@@ -159,46 +158,51 @@ tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
   if (!teams || teams.length === 0 || !teamsPerPool) {
     throw new Error("Invalid teams or teamsPerPool provided");
   }
-  
+
   try {
-    const teamsgroup= await teamModel.find({ _id: { $in: teams } }).select('_id win lose score').lean();
-    const transformedTeams = teamsgroup.map(team => ({
+    const teamsgroup = await teamModel
+      .find({ _id: { $in: teams } })
+      .select("_id win lose score")
+      .lean();
+    const transformedTeams = teamsgroup.map((team) => ({
       _id: team._id.toString(),
       score: team.score,
       win: team.win,
-      lose: team.lose
+      lose: team.lose,
     }));
-    
-    const teamsgroupJson = JSON.stringify(transformedTeams);
-    console.log("ttttttttt",teamsgroupJson)
 
+    const teamsgroupJson = JSON.stringify(transformedTeams);
+    console.log("ttttttttt", teamsgroupJson);
 
     const response = await axios.post(
-      'http://127.0.0.1:8000/group-teams',
+      "https://group-algo.onrender.com/group-teams",
       teamsgroupJson,
       {
         params: {
-          num_teams: teamsPerPool
+          num_teams: teamsPerPool,
         },
         headers: {
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+        },
       }
     );
     // Process the response from the Python endpoint
     if (response.status === 200) {
       const groups = response.data;
-      console.log(groups)
+      console.log(groups);
       // Generate group names dynamically
       const numGroups = groups.length;
-      const groupNames = Array.from({ length: numGroups }, (_, i) => `Group ${i + 1}`);
+      const groupNames = Array.from(
+        { length: numGroups },
+        (_, i) => `Group ${i + 1}`
+      );
 
       // Create groups using received data
       const createdGroups = [];
       groups.forEach((groupData, index) => {
         const groupName = groupNames[index];
         const groupTeamSlice = groupData;
-        
+
         const group = new groupModel({
           name: groupName,
           teams: groupTeamSlice.map((team) => team),
@@ -267,6 +271,5 @@ tournamentSchema.methods.getSortedStandings = function () {
 
   return groupedStandings;
 };
-
 
 module.exports = mongoose.model("Tournaments", tournamentSchema);
