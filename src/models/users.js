@@ -38,7 +38,12 @@ const userIdentitySchema = mongoose.Schema(
     firstName: {
       type: String,
       // required: true,
+    },    
+    solde: {
+      type: Number,
+      default: 5,
     },
+
     lastName: {
       type: String,
       // required: true,
@@ -57,7 +62,8 @@ const subscriptionSchema = mongoose.Schema({
   endDate: { type: Date },
   status: { type: String, enum: ['active', 'cancelled', 'expired'], default: 'active' },
   price : {type:String},
-  planType:{type: String}
+  planType:{type: String},
+
 },
 { _id: false }
 );
@@ -219,8 +225,15 @@ exports.addTournament = async (userId, tournamentId) => {
     if (!user) {
       throw new Error("User not found");
     }
-    user.tournamentIds = user.tournamentIds.filter((id) => id !== null);
 
+    if (user.userIdentity.solde <= 0) {
+      throw new Error("Insufficient solde to create a tournament");
+    }
+
+    // Decrement solde by 1
+    user.userIdentity.solde -= 1;
+
+    user.tournamentIds = user.tournamentIds.filter((id) => id !== null);
     user.tournamentIds.push(tournamentId);
 
     await user.save();
@@ -233,6 +246,9 @@ exports.addTournament = async (userId, tournamentId) => {
     throw error;
   }
 };
+
+
+
 exports.getTournaments = async (id) => {
   try {
     const user = await User.findOne({ _id: id }).populate({
@@ -250,3 +266,4 @@ exports.getTournaments = async (id) => {
     throw error;
   }
 };
+

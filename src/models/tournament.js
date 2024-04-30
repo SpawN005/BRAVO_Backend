@@ -35,8 +35,7 @@ const standingsSchema = new mongoose.Schema({
   goalDifference: {
     type: Number,
     default: 0,
-  },
-  gamesPlayed: {
+  }, gamesPlayed: {
     type: Number,
     default: 0,
   },
@@ -201,29 +200,6 @@ tournamentSchema.statics.findByOwner = async function (ownerId) {
       "Error finding tournaments for the owner: " + error.message
     );
   }
-};
-tournamentSchema.methods.getSortedStandings = function () {
-  const groupedStandings = {};
-
-  for (const group of this.groups) {
-    const groupStandings = this.standings.filter((standing) =>
-      group.teams.some((team) => team._id.equals(standing.team._id))
-    );
-
-    groupStandings.sort((a, b) => {
-      if (a.points !== b.points) {
-        return b.points - a.points;
-      } else if (a.goalDifference !== b.goalDifference) {
-        return b.goalDifference - a.goalDifference;
-      } else {
-        return b.goalsFor - a.goalsFor;
-      }
-    });
-
-    groupedStandings[group.name] = groupStandings;
-  }
-
-  return groupedStandings;
 };
 
 module.exports = mongoose.model("Tournaments", tournamentSchema);

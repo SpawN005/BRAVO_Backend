@@ -64,7 +64,7 @@ const stripeSession = async(plan) => {
 };
 
 app.post("/api/v1/create-subscription-checkout-session", async (req, res) => {
-  const { plan, userId } = req.body; // Assuming you're receiving userId in the request body
+  const { plan, userId } = req.body; // Assuming you're receiving `userId` in the request body
   let planId = null;
 
   if (plan === 100) {
@@ -82,13 +82,15 @@ app.post("/api/v1/create-subscription-checkout-session", async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Assurez-vous que user.abonnement est initialisé
-    
+    // Make sure user.abonnement is initialized
+    if (!user.abonnement) {
+      user.abonnement = {};
+    }
 
     user.abonnement.sessionId = session.id;
     
   
-    const updatedUser = await User.patchUser(userId,user);
+    const updatedUser = await User.patchUser(userId, user);
     
     console.log("Utilisateur mis à jour avec succès :", updatedUser);
 
@@ -99,49 +101,52 @@ app.post("/api/v1/create-subscription-checkout-session", async (req, res) => {
   }
 });
 
+
 app.post("/api/v1/payment-success", async (req, res) => {
   const { userId } = req.body;
-  const use = await User.findById(userId);
+  const user = await User.findById(userId);
+  
   try {
-    // Récupérer la session de paiement depuis Stripe
-    const session = await stripe.checkout.sessions.retrieve(use.abonnement.sessionId);
+    // Retrieve payment session from Stripe
+    const session = await stripe.checkout.sessions.retrieve(user.abonnement.sessionId);
 
     if (session.payment_status === 'paid') {
       const subscriptionId = session.subscription;
+      
       try {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const planId = subscription.plan.id;
-
-        const planType = subscription.plan.amount === 1000000 ? "pass" : "premium";
+        const planType = subscription.plan.amount === 100000 ? "premium" : "pass";
         const endDate = moment.unix(subscription.current_period_end).format('YYYY-MM-DD');
-        const user = await User.findById(userId);
 
         if (user) {
-          // Ajoutez les nouvelles valeurs à l'objet abonnement
+          // Add new values to the subscription object
           user.abonnement.planId = planId;
           user.abonnement.endDate = endDate;
           user.abonnement.status = 'active';
           user.abonnement.price = subscription.plan.amount;
           user.abonnement.startDate = Date.now();
           user.abonnement.planType = planType;
-        
-          // Enregistrez les modifications
-          const updatedUser = await User.patchUser(userId,user);
+
+          // Update solde based on planType
+          if (planType === "premium") {
+            // Add 50 to solde if premium
+            user.userIdentity.solde = (user.solde || 0) + 50;
+          } else if (planType === "pass") {
+            // Add 10 to solde if pass
+            user.userIdentity.solde = (user.solde || 0) + 10;
+          }
           
+          // Save the changes
+          const updatedUser = await User.patchUser(userId, user);
+          
+          return res.json({ message: "Payment successful" });
         } else {
-          console.log("Utilisateur non trouvé.");
+          console.log("User not found.");
         }
-        
-        
-        
-
-          
-        } catch (error) {
-          console.error('Error retrieving subscription:', error);
-        }
-
-
-      return res.json({ message: "Payment successful" });
+      } catch (error) {
+        console.error('Error retrieving subscription:', error);
+      }
     } else {
       return res.status(400).json({ message: "Payment not successful" });
     }
@@ -151,22 +156,41 @@ app.post("/api/v1/payment-success", async (req, res) => {
   }
 });
 
-app.get("/api/v1/current-solde", async (req, res) => {
+
+
+app.get('/api/v1/user-solde/:userId', async (req, res) => {
+  const userId = req.params.userId;
+
   try {
-    const userId = req.user.id; // Assuming you have a way to get the user ID from the request
+    // Assuming User is your mongoose model for user data
     const user = await User.findById(userId);
+    console.log(user);
 
     if (!user) {
-      return res.status(404).json({ error: 'User not found' });
+      return res.status(404).json({ message: 'User not found' });
     }
 
+    // Extract the solde from the user object
     const solde = user.userIdentity.solde;
-    return res.json({ solde });
+    console.log(solde);
+
+    // Return the solde in the response
+    res.status(200).json({solde});
+
+    
+    
   } catch (error) {
-    console.error('Error retrieving current solde:', error);
-    return res.status(500).json({ error: 'Failed to retrieve current solde' });
+    console.error('Error retrieving user solde:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+
+
+
+
+
 
 
 
