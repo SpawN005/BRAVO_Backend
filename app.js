@@ -131,10 +131,10 @@ app.post("/api/v1/payment-success", async (req, res) => {
           // Update solde based on planType
           if (planType === "premium") {
             // Add 50 to solde if premium
-            user.userIdentity.solde = (user.solde || 0) + 50;
+            user.userIdentity.solde = (user.userIdentity.solde ) + 50;
           } else if (planType === "pass") {
             // Add 10 to solde if pass
-            user.userIdentity.solde = (user.solde || 0) + 10;
+            user.userIdentity.solde = (user.userIdentity.solde ) + 10;
           }
           
           // Save the changes
