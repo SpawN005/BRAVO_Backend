@@ -1,5 +1,8 @@
 const mongoose = require("mongoose");
 const User = require("./users.js");
+const teamModel = require("./team.js");
+const axios = require('axios');
+
 
 const type = ["LEAGUE", "KNOCKOUT", "GROUP_KNOCKOUT"];
 const breakingRules = ["NOP", "GD", "GS", "HTH", "MW", "CG"];
@@ -153,32 +156,68 @@ const tournamentSchema = new mongoose.Schema({
 });
 
 tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
-  console.log(teamsPerPool);
   if (!teams || teams.length === 0 || !teamsPerPool) {
     throw new Error("Invalid teams or teamsPerPool provided");
   }
+  
+  try {
+    const teamsgroup= await teamModel.find({ _id: { $in: teams } }).select('_id win lose score').lean();
+    const transformedTeams = teamsgroup.map(team => ({
+      _id: team._id.toString(),
+      score: team.score,
+      win: team.win,
+      lose: team.lose
+    }));
+    
+    const teamsgroupJson = JSON.stringify(transformedTeams);
+    console.log("ttttttttt",teamsgroupJson)
 
-  const nbGroups = Math.ceil(teams.length / teamsPerPool);
 
-  const groups = [];
-  for (let i = 0; i < nbGroups; i++) {
-    const groupName = `Group ${i + 1}`;
-    const groupTeamSlice = teams.slice(
-      i * teamsPerPool,
-      (i + 1) * teamsPerPool
+    const response = await axios.post(
+      'http://127.0.0.1:8000/group-teams',
+      teamsgroupJson,
+      {
+        params: {
+          num_teams: teamsPerPool
+        },
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
     );
+    // Process the response from the Python endpoint
+    if (response.status === 200) {
+      const groups = response.data;
+      console.log(groups)
+      // Generate group names dynamically
+      const numGroups = groups.length;
+      const groupNames = Array.from({ length: numGroups }, (_, i) => `Group ${i + 1}`);
 
-    const group = new groupModel({
-      name: groupName,
-      teams: groupTeamSlice.map((team) => team),
-    });
+      // Create groups using received data
+      const createdGroups = [];
+      groups.forEach((groupData, index) => {
+        const groupName = groupNames[index];
+        const groupTeamSlice = groupData;
+        
+        const group = new groupModel({
+          name: groupName,
+          teams: groupTeamSlice.map((team) => team),
+        });
 
-    await group.save();
-    groups.push(group);
+        createdGroups.push(group);
+      });
+
+      return createdGroups;
+    } else {
+      throw new Error(`Failed to create groups. Status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error calling Python endpoint:", error); // Log the full error object
+
+    throw new Error(`Error calling Python endpoint: ${error.message}`);
   }
-
-  return groups;
 };
+
 tournamentSchema.statics.createGroup = async function (teams) {
   const groups = [];
   console.log(teams);
@@ -228,79 +267,6 @@ tournamentSchema.methods.getSortedStandings = function () {
 
   return groupedStandings;
 };
-tournamentSchema.statics.StandingsUpdate = async function (
-  tournamentId,
-  scoreTeam1,
-  scoreTeam2,
-  match
-) {
-  try {
-    const tournament = await this.findById(tournamentId);
 
-    const team1Standings = tournament.standings.find(
-      (standing) => String(standing.team) === String(match.team1)
-    );
-    const team2Standings = tournament.standings.find(
-      (standing) => String(standing.team) === String(match.team2)
-    );
-
-    if (!team1Standings || !team2Standings) {
-      throw new Error("Standings not found for one or both teams");
-    }
-
-    if (match.isWinner === match.team1) {
-      team1Standings.points += tournament.rules.pointsPerWin;
-      team1Standings.wins += 1;
-      team1Standings.goalsFor += scoreTeam1;
-      team1Standings.goalsAgainst += scoreTeam2;
-      team1Standings.goalDifference = Math.abs(
-        team1Standings.goalsFor - team1Standings.goalsAgainst
-      );
-
-      team2Standings.losses += 1;
-      team2Standings.goalsFor += scoreTeam2;
-      team2Standings.goalsAgainst += scoreTeam1;
-      team2Standings.goalDifference = Math.abs(
-        team2Standings.goalsFor - team2Standings.goalsAgainst
-      );
-    } else if (match.isWinner === "DRAW") {
-      team1Standings.points += tournament.rules.pointsPerDraw;
-      team1Standings.draws += 1;
-      team1Standings.goalsFor += scoreTeam1;
-      team1Standings.goalsAgainst += scoreTeam2;
-      team1Standings.goalDifference = Math.abs(
-        team1Standings.goalsFor - team1Standings.goalsAgainst
-      );
-
-      team2Standings.points += tournament.rules.pointsPerDraw;
-      team2Standings.draws += 1;
-      team2Standings.goalsFor += scoreTeam2;
-      team2Standings.goalsAgainst += scoreTeam1;
-      team2Standings.goalDifference = Math.abs(
-        team2Standings.goalsFor - team2Standings.goalsAgainst
-      );
-    } else {
-      team2Standings.points += tournament.rules.pointsPerWin;
-      team2Standings.wins += 1;
-      team2Standings.goalsFor += scoreTeam2;
-      team2Standings.goalsAgainst += scoreTeam1;
-      team2Standings.goalDifference = Math.abs(
-        team2Standings.goalsFor - team2Standings.goalsAgainst
-      );
-
-      team1Standings.losses += 1;
-      team1Standings.goalsFor += scoreTeam1;
-      team1Standings.goalsAgainst += scoreTeam2;
-      team1Standings.goalDifference = Math.abs(
-        team1Standings.goalsFor - team1Standings.goalsAgainst
-      );
-    }
-
-    await tournament.save();
-    return tournament;
-  } catch (error) {
-    throw new Error("Error updating tournament standings: " + error.message);
-  }
-};
 
 module.exports = mongoose.model("Tournaments", tournamentSchema);
