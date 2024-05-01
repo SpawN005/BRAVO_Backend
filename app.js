@@ -82,8 +82,10 @@ app.post("/api/v1/create-subscription-checkout-session", async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    // Assurez-vous que user.abonnement est initialisé
-    
+    // Ensure user.abonnement is initialized
+    if (!user.abonnement) {
+      user.abonnement = {}; // Initialize user.abonnement if it doesn't exist
+    }
 
     user.abonnement.sessionId = session.id;
     
@@ -101,6 +103,7 @@ app.post("/api/v1/create-subscription-checkout-session", async (req, res) => {
 
 
 
+
 app.post("/api/v1/payment-success", async (req, res) => {
   const { userId } = req.body;
   const use = await User.findById(userId);
@@ -109,12 +112,12 @@ app.post("/api/v1/payment-success", async (req, res) => {
     const session = await stripe.checkout.sessions.retrieve(use.abonnement.sessionId);
 
     if (session.payment_status === 'paid') {
-      const subscriptionId = session.subscription;
+      const subscriptionId = session.subscription;  
       try {
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const planId = subscription.plan.id;
 
-        const planType = subscription.plan.amount === 1000000 ? "pass" : "premium";
+        const planType = subscription.plan.amount === 100000 ? "premium" : "pass";
         const endDate = moment.unix(subscription.current_period_end).format('YYYY-MM-DD');
         const user = await User.findById(userId);
 
