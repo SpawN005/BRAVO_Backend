@@ -3,6 +3,18 @@ const router = express.Router();
 const matchStatController = require("../../controllers/matchStat.controller");
 const Match = require("../../models/matches");
 
+router.get("/GeneralStats", async (req, res) => {
+  try {
+    
+
+    const generalStats = await matchStatController.getGenerals();
+    res.status(200).json(generalStats);
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
 // Route to handle match actions
 router.post("/score/:matchId", async (req, res) => {
   try {
@@ -234,5 +246,6 @@ router.get("/lineup/:matchId/:teamId", async (req, res) => {
     }
   }
 });
+
 
 module.exports = router;

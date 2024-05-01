@@ -1,9 +1,9 @@
 const Tournament = require("../models/tournament");
-const tournamentController = require("../controllers/TournamentController");
 const Team = require("../models/team");
 const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
+const UserModel = require("../models/users");
 
 const getMatchStatsByMatchId = async (matchId, teamId1, teamId2) => {
   try {
@@ -323,7 +323,6 @@ const updateTeamWin = async (match) => {
         }
         team1Standings.gamesPlayed += 1;
         team2Standings.gamesPlayed += 1;
-        console.log(tournament.rules.pointsPerWin);
         if (match.isWinner === match.team1) {
           team1Standings.points += tournament.rules.pointsPerWin;
           team1Standings.wins += 1;
@@ -647,7 +646,31 @@ const addRedCard = async (idmatch, idplayer, idteam) => {
   }
 };
 
+const getGenerals = async () => {
+  try {
+    const numberOfTeams = await Team.countDocuments();
+    const numberOfTournaments = await Tournament.countDocuments();
+
+    const usersWithPermissions = await UserModel.findByPermissionLevel({
+      $in: [3, 4],
+    })
+  
+    const countUsersWithPermissions = usersWithPermissions.length;
+
+    return {
+      numberOfTeams: numberOfTeams,
+      numberOfTournaments: numberOfTournaments,
+      countUsersWithPermissions: countUsersWithPermissions,
+    };
+  } catch (error) {
+    console.error("Error getting stats:", error);
+    throw error;
+  }
+};
+
+
 module.exports = {
+  getGenerals,
   scoreGoal,
   getMatchStats,
   cancelGoal,
