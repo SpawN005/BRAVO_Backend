@@ -251,7 +251,6 @@ const updateTeamWin = async (match) => {
     // Vérifier le score de chaque équipe
     const scoreTeam1 = matchStatsTeam1.score;
     const scoreTeam2 = matchStatsTeam2.score;
-    let winner;
 
     // Mettre à jour l'attribut 'win' du modèle 'Team' en fonction du score
     if (scoreTeam1 > scoreTeam2) {
@@ -366,12 +365,12 @@ const updateTeamWin = async (match) => {
         console.log(nextM);
         if (nextM) {
           if (!nextM.team1) {
-            await Match.findByIdAndUpdate(nextM._id, { team1: winner });
+            await Match.findByIdAndUpdate(nextM._id, { team1: match.isWinner });
           } else {
-            await Match.findByIdAndUpdate(nextM._id, { team2: winner });
+            await Match.findByIdAndUpdate(nextM._id, { team2: match.isWinner });
           }
         } else {
-          await Tournament.updateOne(
+          await tournamentController.updateOne(
             { _id: match.tournament._id },
             { tournamentWinner: match.isWinner }
           );

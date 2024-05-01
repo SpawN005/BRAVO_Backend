@@ -38,6 +38,55 @@ async function getMatcheByTeams(teamId1, teamId2, tournamentId) {
     throw error;
   }
 }
+async function UpcomingMatches(teamId) {
+  try {
+    const matches = await Match.find({
+      $or: [{ team1: teamId }, { team2: teamId }],
+      status: "UPCOMING",
+    }).populate("team1 team2");
+    return matches;
+  } catch (error) {
+    console.error("Error fetching matches by team ID:", error);
+    throw error;
+  }
+}
+async function getMatchestatByTeamId(teamId) {
+  try {
+    const matches = await Match.find({
+      $or: [{ team1: teamId }, { team2: teamId }],
+      status: "FINISHED",
+    })
+      .populate("team1 team2")
+      .sort({ date: -1 });
+
+    // Loop through each match and fetch matchstats for both teams
+    for (let i = 0; i < matches.length; i++) {
+      const matchstatTeam1 = await matchStats.findOne({
+        match: matches[i]._id,
+        team: matches[i].team1._id,
+      });
+      const matchstatTeam2 = await matchStats.findOne({
+        match: matches[i]._id,
+        team: matches[i].team2._id,
+      });
+
+      // Merge matchstats for both teams into the match object
+      matches[i] = {
+        ...matches[i]._doc,
+        matchstats: {
+          team1: matchstatTeam1,
+          team2: matchstatTeam2,
+        },
+      };
+    }
+
+    return matches;
+  } catch (error) {
+    console.error("Error fetching matches by team ID:", error);
+    throw error;
+  }
+}
+
 const getMatch = async (matchId) => {
   console.log(matchId);
   try {
@@ -646,4 +695,6 @@ module.exports = {
   getLiveMatches,
   getMatcheByTeams,
   determineTopTeams,
+  getMatchestatByTeamId,
+  UpcomingMatches,
 };
