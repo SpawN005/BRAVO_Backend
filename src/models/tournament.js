@@ -175,7 +175,7 @@ tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
     console.log("ttttttttt", teamsgroupJson);
 
     const response = await axios.post(
-      "https://group-algo.onrender.com/group-teams",
+      "http://127.0.0.1:8000/group-teams",
       teamsgroupJson,
       {
         params: {
