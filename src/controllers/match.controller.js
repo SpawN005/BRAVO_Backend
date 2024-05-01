@@ -414,41 +414,45 @@ const getBracketForTournament = async (tournamentId) => {
 
 const getLiveMatches = async () => {
   try {
+    // Fetch live matches from the database
     const liveMatches = await Match.find({ status: "LIVE" }).populate(
       "team1 team2"
     );
-    console.log(liveMatches);
-    // Parcourir chaque match en direct
+
+    // Use Promise.all to handle multiple asynchronous operations in parallel
     const liveMatchesWithStats = await Promise.all(
       liveMatches.map(async (match) => {
-        console.log("MatchStatController:", MatchStatController);
-
-        // Obtenir les matchstats pour team1
+        console.log(match.team1);
+        // Fetch match stats for team1
         const matchStatsTeam1 = await MatchStatController.getMatchStats(
           match._id,
-          match.team1._id
-        );
-        // Obtenir les matchstats pour team2
-        const matchStatsTeam2 = await MatchStatController.getMatchStats(
-          match._id,
-          match.team2._id
+          match.team1
         );
 
+        // Fetch match stats for team2
+        const matchStatsTeam2 = await MatchStatController.getMatchStats(
+          match._id,
+          match.team2
+        );
+
+        // Log the match stats for debugging (consider removing this in production)
+        console.log("Match stats for team1:", matchStatsTeam1);
+        console.log("Match stats for team2:", matchStatsTeam2);
+
+        // Return match object with stats for both teams
         return {
-          ...match.toObject(), // Convertir l'objet match en objet javascript
+          ...match.toObject(), // Convert match Mongoose document to plain object
           matchStatsTeam1,
           matchStatsTeam2,
         };
       })
     );
 
+    // Return live matches with their respective stats
     return liveMatchesWithStats;
   } catch (error) {
-    console.error(
-      "Erreur lors de la récupération des matchs en direct :",
-      error
-    );
-    throw new Error("Erreur lors de la récupération des matchs en direct.");
+    console.error("Error while fetching live matches and stats:", error);
+    throw new Error("Error while fetching live matches and stats.");
   }
 };
 const getMatchesByUserId = async (userId) => {
@@ -606,7 +610,7 @@ const createGroupKnockoutMatches = async (tournamentId) => {
 };
 const patchTMatchById = async (id, updates) => {
   try {
-    console.log("updates: ",updates)
+    console.log("updates: ", updates);
     const updatedMatch = await Match.findByIdAndUpdate(id, updates, {
       new: true,
     });

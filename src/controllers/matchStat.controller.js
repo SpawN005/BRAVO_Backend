@@ -1,5 +1,4 @@
 const Tournament = require("../models/tournament");
-const tournamentController = require("../controllers/TournamentController");
 const Team = require("../models/team");
 const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
