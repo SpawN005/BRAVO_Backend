@@ -250,7 +250,7 @@ exports.getAvailableObservers = async (req, res) => {
       code: 500,
       status: "error",
       message: "An error occurred while fetching available observers",
-      error: error.message,
+      error: error?.message,
     });
   }
 };
