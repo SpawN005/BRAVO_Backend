@@ -1,11 +1,9 @@
 const express = require("express");
 const MatchController = require("../../controllers/match.controller");
-const MatchStatController = require("../../controllers/matchStat.controller");
-const matchStats = require("../../models/matchStats");
-
+const TournamentsController = require("../../controllers/TournamentController");
+const tournament = require("../../models/tournament");
+const Match = require("../../models/matches");
 const router = express.Router();
-const ValidationMiddleware = require("../../middlewares/validation/validation.middleware");
-const { getMatchStats } = require("../../controllers/matchStat.controller");
 
 router.get("/tournaments/:tournamentId", async (req, res) => {
   try {
@@ -153,6 +151,7 @@ router.get("/myteam/:teamId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
+
 router.get("/bracket/:tournamentId", async (req, res) => {
   try {
     const tournamentId = req.params.tournamentId;
@@ -168,7 +167,62 @@ router.get("/bracket/:tournamentId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
+router.get("/goupknockout/gettopteams/:tournamentId", async (req, res) => {
+  try {
+    const tournamentId = req.params.tournamentId;
+    const Tournament = await tournament.findById(tournamentId);
+    const topTeamsPerGroup = MatchController.determineTopTeams(
+      Tournament._id,
+      Tournament.groups,
+      Tournament.standings,
+      2
+    );
 
+    if (Tournament.rules.type === "LEAGUE") {
+      Tournament.tournamentWinner =
+        topTeamsPerGroup[Tournament.groups[0]._id.toString()][0];
+      Tournament.save();
+    } else {
+      const existingMatches = await Match.find({
+        tournament: tournamentId,
+        stage: "KNOCKOUT_STAGE",
+        round: 1,
+      }).sort({ _id: 1 });
+      const groupIds = Object.keys(topTeamsPerGroup);
+      const numGroups = groupIds.length;
+
+      // Pair top teams with second teams from other groups
+      for (let i = 0; i < numGroups; i++) {
+        const topTeams = topTeamsPerGroup[groupIds[i]];
+        const secondTeams = topTeamsPerGroup[groupIds[(i + 1) % numGroups]];
+
+        // Update matches with the top team and second team pairing
+        // Assume matches are pre-created in the database and are ordered as expected
+        if (existingMatches[i]) {
+          existingMatches[i].team1 = topTeams[0];
+          existingMatches[i].team2 = secondTeams[1];
+          await existingMatches[i].save();
+          console.log(existingMatches[i]);
+        }
+      }
+    }
+    res.status(200).json(topTeamsPerGroup);
+  } catch (error) {
+    console.error("Error fetching top teams:", error);
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+});
+router.get("/livematches", async (req, res) => {
+  try {
+    const liveMatches = await MatchController.getAllLiveMatches();
+    res.status(200).json(liveMatches);
+  } catch (error) {
+    console.error("Error retrieving live matches:", error);
+    res.status(500).json({ error: "Error retrieving live matches." });
+  }
+});
 router.get("/:matchId", async (req, res) => {
   try {
     const matchId = req.params.matchId;
@@ -253,7 +307,7 @@ router.patch("/patch/:id", async (req, res) => {
   } catch (error) {
     console.error("Error updating match date by ID:", error);
     res
-      .status(error.status || "500")
+      .status(error.status || 500)
       .json({ message: error.message || "Internal Server Error" });
   }
 });
@@ -301,5 +355,6 @@ router.get("/", async (req, res) => {
       .json({ error: "Erreur lors de la récupération des matchs en direct." });
   }
 });
+
 
 module.exports = router;

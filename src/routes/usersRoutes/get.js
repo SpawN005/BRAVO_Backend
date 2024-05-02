@@ -70,10 +70,12 @@ const initializeGetRoutes = (app) => {
     UsersController.getObserversByTournamentId,
   ]);
   app.get("/observers", [UsersController.getObservers]);
+  app.get("/availableobservers/:date", [UsersController.getAvailableObservers]);
   app.get("/referees/:tournamentId", [
     UsersController.getRefereesByTournamentId,
   ]);
   app.get("/referees", [UsersController.getReferees]);
+  app.get("/availablereferees/:date", [UsersController.getAvailableReferees]);
 };
 
 module.exports = initializeGetRoutes;

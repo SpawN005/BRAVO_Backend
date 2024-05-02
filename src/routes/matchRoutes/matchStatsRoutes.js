@@ -96,7 +96,7 @@ router.get("/matches/:matchId/stat", async (req, res) => {
   try {
     const { matchId } = req.params;
     const { teamId1, teamId2 } = req.body;
-
+    console.log(matchId, teamId1, teamId2)
     const matchStats = await matchStatController.getMatchStatsByMatchId(
       matchId,
       teamId1,
@@ -108,7 +108,23 @@ router.get("/matches/:matchId/stat", async (req, res) => {
       .status(error.status || 500)
       .json({ message: error.message || "Internal Server Error" });
   }
-});
+}); 
+
+router.post("/matches/:matchId/stat", async (req, res) => {
+  try {
+    const { matchId } = req.params;
+    const matchStats = await matchStatController.getMatchStatsByMatchIdPost(
+      matchId
+      
+    );
+    res.status(200).json(matchStats);
+  } catch (error) {
+    res
+      .status(error.status || 500)
+      .json({ message: error.message || "Internal Server Error" });
+  }
+}); 
+
 
 router.post("/lineup/:matchId", async (req, res) => {
   try {
@@ -119,12 +135,16 @@ router.post("/lineup/:matchId", async (req, res) => {
       idteam,
       players
     );
-
     res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
+
+
+
+
+
 router.get("/:matchId/:teamId", async (req, res) => {
   try {
     const matchId = req.params.matchId;

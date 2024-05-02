@@ -150,7 +150,7 @@ app.post("/api/v1/payment-success", async (req, res) => {
 // Create Socket.IO server
 const io = socketIO(server, {
   cors: {
-    origin: "http://localhost:3000", // Replace with your frontend URL
+    origin: "*", // Replace with your frontend URL
     methods: ["GET", "POST"],
   },
 });

@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 const User = require("./users.js");
+const teamModel = require("./team.js");
+const axios = require("axios");
 
 const type = ["LEAGUE", "KNOCKOUT", "GROUP_KNOCKOUT"];
 const breakingRules = ["NOP", "GD", "GS", "HTH", "MW", "CG"];
@@ -35,7 +37,8 @@ const standingsSchema = new mongoose.Schema({
   goalDifference: {
     type: Number,
     default: 0,
-  }, gamesPlayed: {
+  },
+  gamesPlayed: {
     type: Number,
     default: 0,
   },
@@ -123,6 +126,13 @@ const tournamentSchema = new mongoose.Schema({
   rules: {
     type: ruleSchema,
   },
+  tournamentWinner: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Teams",
+  },
+  logo: {
+    type: String,
+  },
   groups: [groupSchema], // Array of group objects
   sponsors: [sponsorSchema],
   matches: [
@@ -131,10 +141,6 @@ const tournamentSchema = new mongoose.Schema({
       ref: "Matches",
     },
   ],
-  tournamentWinner: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Teams",
-  },
   standings: {
     type: [standingsSchema],
     default: function () {
@@ -149,32 +155,73 @@ const tournamentSchema = new mongoose.Schema({
 });
 
 tournamentSchema.statics.createGroups = async function (teams, teamsPerPool) {
-  console.log(teamsPerPool);
   if (!teams || teams.length === 0 || !teamsPerPool) {
     throw new Error("Invalid teams or teamsPerPool provided");
   }
 
-  const nbGroups = Math.ceil(teams.length / teamsPerPool);
+  try {
+    const teamsgroup = await teamModel
+      .find({ _id: { $in: teams } })
+      .select("_id win lose score")
+      .lean();
+    const transformedTeams = teamsgroup.map((team) => ({
+      _id: team._id.toString(),
+      score: team.score,
+      win: team.win,
+      lose: team.lose,
+    }));
 
-  const groups = [];
-  for (let i = 0; i < nbGroups; i++) {
-    const groupName = `Group ${i + 1}`;
-    const groupTeamSlice = teams.slice(
-      i * teamsPerPool,
-      (i + 1) * teamsPerPool
+    const teamsgroupJson = JSON.stringify(transformedTeams);
+    console.log("ttttttttt", teamsgroupJson);
+
+    const response = await axios.post(
+      "https://group-algo.onrender.com/group-teams",
+      teamsgroupJson,
+      {
+        params: {
+          num_teams: teamsPerPool,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
     );
+    // Process the response from the Python endpoint
+    if (response.status === 200) {
+      const groups = response.data;
+      console.log(groups);
+      // Generate group names dynamically
+      const numGroups = groups.length;
+      const groupNames = Array.from(
+        { length: numGroups },
+        (_, i) => `Group ${i + 1}`
+      );
 
-    const group = new groupModel({
-      name: groupName,
-      teams: groupTeamSlice.map((team) => team),
-    });
+      // Create groups using received data
+      const createdGroups = [];
+      groups.forEach((groupData, index) => {
+        const groupName = groupNames[index];
+        const groupTeamSlice = groupData;
 
-    await group.save();
-    groups.push(group);
+        const group = new groupModel({
+          name: groupName,
+          teams: groupTeamSlice.map((team) => team),
+        });
+
+        createdGroups.push(group);
+      });
+
+      return createdGroups;
+    } else {
+      throw new Error(`Failed to create groups. Status: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Error calling Python endpoint:", error); // Log the full error object
+
+    throw new Error(`Error calling Python endpoint: ${error.message}`);
   }
-
-  return groups;
 };
+
 tournamentSchema.statics.createGroup = async function (teams) {
   const groups = [];
   console.log(teams);
@@ -200,6 +247,29 @@ tournamentSchema.statics.findByOwner = async function (ownerId) {
       "Error finding tournaments for the owner: " + error.message
     );
   }
+};
+tournamentSchema.methods.getSortedStandings = function () {
+  const groupedStandings = {};
+
+  for (const group of this.groups) {
+    const groupStandings = this.standings.filter((standing) =>
+      group.teams.some((team) => team._id.equals(standing.team._id))
+    );
+
+    groupStandings.sort((a, b) => {
+      if (a.points !== b.points) {
+        return b.points - a.points;
+      } else if (a.goalDifference !== b.goalDifference) {
+        return b.goalDifference - a.goalDifference;
+      } else {
+        return b.goalsFor - a.goalsFor;
+      }
+    });
+
+    groupedStandings[group.name] = groupStandings;
+  }
+
+  return groupedStandings;
 };
 
 module.exports = mongoose.model("Tournaments", tournamentSchema);

@@ -26,6 +26,16 @@ exports.getAllPlayers = async (req, res) => {
     }
 };
 
+exports.getAllPlayersNames = async (req, res) => {
+    try {
+        const players = await Players.find({}, 'name');
+        res.json(players);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
 // Contrôleur pour récupérer un joueur par ID
 exports.getPlayerById = async (req, res) => {
     try {

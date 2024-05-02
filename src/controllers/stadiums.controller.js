@@ -1,10 +1,30 @@
 const Stadium = require("../models/stadium");
+var MatchModel=require("../models/matches")
 
 // Get all stadiums
 const getAllStadiums = async (req, res) => {
   try {
     const stadiums = await Stadium.find();
     res.json(stadiums);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+const getAvailableStadiums = async (req, res) => {
+  try {
+    const stadiums = await Stadium.find();
+    const matches = await MatchModel.findByDate(req.params.date);
+    const assignedStadiumIds = matches.map(match => match.stadium);
+    const availableStadiums = stadiums.filter(stadium => {
+      return !assignedStadiumIds.find(id => id.equals(stadium._id));
+    });
+    
+    res.status(200).send({
+      code: 200,
+      status: "success",
+      data: availableStadiums,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
@@ -96,6 +116,7 @@ const deleteStadiumById = async (req, res) => {
 
 module.exports = {
   getAllStadiums,
+  getAvailableStadiums,
   getStadiumById,
   createStadium,
   updateStadiumById,
