@@ -237,13 +237,13 @@ const updateTeamWin = async (match) => {
     // Vérifier le score de chaque équipe
     const scoreTeam1 = matchStatsTeam1.score;
     const scoreTeam2 = matchStatsTeam2.score;
-    let winner;
 
     // Mettre à jour l'attribut 'win' du modèle 'Team' en fonction du score
     if (scoreTeam1 > scoreTeam2) {
       await Team.updateOne({ _id: match.team1._id }, { $inc: { win: 1 } });
       await Team.updateOne({ _id: match.team2._id }, { $inc: { lose: 1 } });
       await Match.updateOne({ _id: match._id }, { isWinner: match.team1._id });
+
       switch (scoreTeam1 - scoreTeam2) {
         case 1:
           s1 = k * (1 - we);
@@ -261,6 +261,7 @@ const updateTeamWin = async (match) => {
       s2 = k * -we;
 
       winner = match.team1._id;
+
     } else if (scoreTeam2 > scoreTeam1) {
       await Team.updateOne({ _id: match.team2._id }, { $inc: { win: 1 } });
       await Team.updateOne({ _id: match.team1._id }, { $inc: { lose: 1 } });
@@ -281,6 +282,7 @@ const updateTeamWin = async (match) => {
       }
       s1 = k * -we;
       winner = match.team2._id;
+
     } else if (scoreTeam2 == scoreTeam1) {
       await Team.updateOne({ _id: match.team2._id }, { $inc: { nul: 1 } });
       await Team.updateOne({ _id: match.team1._id }, { $inc: { nul: 1 } });
@@ -290,10 +292,8 @@ const updateTeamWin = async (match) => {
     await Team.updateOne({ _id: match.team1._id }, { $inc: { score: s1 } });
     await Team.updateOne({ _id: match.team2._id }, { $inc: { score: s2 } });
     await Match.updateOne({ _id: match._id }, { status: "FINISHED" });
-    console.log(match.stage);
     switch (match.stage) {
       case "LEAGUE":
-      case "GROUP_STAGE":
         const tournament = await Tournament.findById(match.tournament._id);
 
         const team1Standings = tournament.standings.find(
@@ -309,6 +309,7 @@ const updateTeamWin = async (match) => {
         team1Standings.gamesPlayed += 1;
         team2Standings.gamesPlayed += 1;
         console.log(tournament.rules.pointsPerWin);
+
         if (match.isWinner === match.team1) {
           team1Standings.points += tournament.rules.pointsPerWin;
           team1Standings.wins += 1;
@@ -357,6 +358,7 @@ const updateTeamWin = async (match) => {
               assists: 1,
             });
           }
+
 
           console.log("Updated assistingTeamStats:", assistingTeamStats);
 
@@ -811,3 +813,4 @@ const updateTeamWin = async (match) => {
     getMatch,
     getMatchStatsByMatchId,
   };
+

@@ -370,8 +370,7 @@ exports.addTournament = (req, res) => {
           message: "User not found",
         });
       }
-    })
-    .then(() => {
+
       res.status(200).send({
         code: 200,
         status: "success",
@@ -390,6 +389,14 @@ exports.addTournament = (req, res) => {
         });
       }
 
+      if (error.message === "Insufficient solde to create a tournament") {
+        return res.status(400).send({
+          code: 400,
+          status: "bad request",
+          message: "Insufficient solde to create a tournament",
+        });
+      }
+
       res.status(500).send({
         code: 500,
         status: "error",
@@ -398,6 +405,9 @@ exports.addTournament = (req, res) => {
       });
     });
 };
+
+
+
 exports.getTournaments = async (req, res) => {
   try {
     const user = await UserModel.getTournaments(req.params.userId);

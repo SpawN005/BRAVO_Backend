@@ -1,10 +1,10 @@
-const UserModel = require("../../models/users");
+const User = require("../../models/users");
 const isEmpty = require("../../utils/isEmpty");
 const crypto = require("crypto");
 const validator = require("validator");
 
 exports.isPasswordAndUserMatch = (req, res, next) => {
-  UserModel.findByEmail(req.body.email)
+  User.findByEmail(req.body.email)
     .then((user) => {
       if (!user[0]) {
         return res.status(404).send({

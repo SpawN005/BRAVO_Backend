@@ -1,8 +1,6 @@
 var TournamentsController = require("../../controllers/TournamentController");
 
 const initializeGetRoutes = (app) => {
-  // GET all tournaments
-  app.get("/tournaments", TournamentsController.getAll);
 
   // GET tournament by ID
   app.get("/tournaments/:id", TournamentsController.getById);
@@ -15,6 +13,7 @@ const initializeGetRoutes = (app) => {
     "/tournaments/status/:status",
     TournamentsController.getTournamentsByStatus
   );
+
 };
 
 module.exports = initializeGetRoutes;

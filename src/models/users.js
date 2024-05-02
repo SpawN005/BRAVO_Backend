@@ -38,7 +38,12 @@ const userIdentitySchema = mongoose.Schema(
     firstName: {
       type: String,
       // required: true,
+    },    
+    solde: {
+      type: Number,
+      default: 5,
     },
+
     lastName: {
       type: String,
       // required: true,
@@ -49,6 +54,18 @@ const userIdentitySchema = mongoose.Schema(
     },
   },
   { _id: false }
+);
+const subscriptionSchema = mongoose.Schema({
+  sessionId: { type: String, required: true },
+  planId: { type: String },
+  startDate: { type: Date, default: Date.now() },
+  endDate: { type: Date },
+  status: { type: String, enum: ['active', 'cancelled', 'expired'], default: 'active' },
+  price : {type:String},
+  planType:{type: String},
+
+},
+{ _id: false }
 );
 
 const userSchema = mongoose.Schema({
@@ -63,18 +80,21 @@ const userSchema = mongoose.Schema({
   userIdentity: {
     type: userIdentitySchema,
   },
+  abonnement: {
+    type: subscriptionSchema,
+  },
   userAdress: {
     type: userAdressSchema,
   },
   tournamentIds: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Tournaments", // Replace with your Tournament collection name if different
+      ref: "Tournaments", 
     },
   ],
 });
 
-const User = mongoose.model("Users", userSchema);
+User = mongoose.model("Users", userSchema);
 //-------------------------------------------------------
 exports.createUser = (userData) => {
   const user = new User(userData);
@@ -205,8 +225,15 @@ exports.addTournament = async (userId, tournamentId) => {
     if (!user) {
       throw new Error("User not found");
     }
-    user.tournamentIds = user.tournamentIds.filter((id) => id !== null);
 
+    if (user.userIdentity.solde <= 0) {
+      throw new Error("Insufficient solde to create a tournament");
+    }
+
+    // Decrement solde by 1
+    user.userIdentity.solde -= 1;
+
+    user.tournamentIds = user.tournamentIds.filter((id) => id !== null);
     user.tournamentIds.push(tournamentId);
 
     await user.save();
@@ -219,6 +246,9 @@ exports.addTournament = async (userId, tournamentId) => {
     throw error;
   }
 };
+
+
+
 exports.getTournaments = async (id) => {
   try {
     const user = await User.findOne({ _id: id }).populate({
@@ -236,3 +266,4 @@ exports.getTournaments = async (id) => {
     throw error;
   }
 };
+

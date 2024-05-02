@@ -7,6 +7,9 @@ const Player = require("../models/players");
 const matchStats = require("../models/matchStats");
 const matches = require("../models/matches");
 
+
+
+
 // Initialize Socket.IO instance (assuming you have already created an HTTP server)
 async function getMatchesByTeamId(teamId) {
   try {
@@ -340,9 +343,7 @@ const getTeamById = async (teamId) => {
 const getAllMatchesForTournament = async (tournamentId) => {
   try {
     // Find all matches for the specified tournament ID
-    const matches = await Match.find({
-      tournament: tournamentId,
-    })
+    const matches = await Match.find({ tournament: tournamentId })
       .populate({
         path: "team1",
         select: "name stage logo",
@@ -361,10 +362,7 @@ const getBracketForTournament = async (tournamentId) => {
   console.log(tournamentId);
   try {
     // Find all matches for the specified tournament ID, sorted by round
-    const matches = await Match.find({
-      tournament: tournamentId,
-      stage: { $in: ["KNOCKOUT", "KNOCKOUT_STAGE"] },
-    })
+    const matches = await Match.find({ tournament: tournamentId })
       .sort({ round: 1 })
       .populate({
         path: "team1",
@@ -419,6 +417,7 @@ const getLiveMatches = async () => {
     );
     console.log(liveMatches);
     // Parcourir chaque match en direct
+
     const liveMatchesWithStats = await Promise.all(
       liveMatches.map(async (match) => {
         console.log("MatchStatController:", MatchStatController);
@@ -441,6 +440,7 @@ const getLiveMatches = async () => {
         };
       })
     );
+
 
     return liveMatchesWithStats;
   } catch (error) {
@@ -725,3 +725,4 @@ module.exports = {
   determineTopTeams,
   getAllLiveMatches
 };
+
