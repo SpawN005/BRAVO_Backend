@@ -39,6 +39,10 @@ const userIdentitySchema = mongoose.Schema(
       type: String,
       // required: true,
     },
+      solde: {
+      type: Number,
+      default: 5,
+    },
     lastName: {
       type: String,
       // required: true,
@@ -219,15 +223,28 @@ exports.removeById = (userId) => {
 
 exports.addTournament = async (userId, tournamentId) => {
   try {
+
     const user = await User.findById(userId);
 
     if (!user) {
       throw new Error("User not found");
     }
-    user.tournamentIds = user.tournamentIds.filter((id) => id !== null);
 
+    // Check if the user has an active subscription or solde > 0
+    if ((user.abonnement.status !== 'active') && user.userIdentity.solde <= 0) {
+      throw new Error("Subscription is not active and solde is insufficient to create a tournament");
+    }
+
+    // If the user has solde, decrement it by 1
+    if (user.userIdentity.solde > 0) {
+      user.userIdentity.solde -= 1;
+    }
+
+    // Update tournamentIds
+    user.tournamentIds = user.tournamentIds.filter((id) => id !== null);
     user.tournamentIds.push(tournamentId);
 
+    // Save user
     await user.save();
 
     console.log("Tournament added to user:", user);
