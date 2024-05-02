@@ -387,13 +387,15 @@ const updateTeamWin = async (match) => {
         break;
       case "KNOCKOUT":
       case "KNOCKOUT_STAGE":
+        console.log("first eeeeeeeeee");
         const nextM = await Match.findById(match.nextMatch);
+        console.log("winner", match.isWinner);
         console.log(nextM);
         if (nextM) {
           if (!nextM.team1) {
-            await Match.findByIdAndUpdate(nextM._id, { team1: match.isWinner });
+            await Match.updateOne({ _id: nextM._id }, { team1: winner });
           } else {
-            await Match.findByIdAndUpdate(nextM._id, { team2: match.isWinner });
+            await Match.updateOne({ _id: nextM._id }, { team2: winner });
           }
         } else {
           await tournamentController.updateOne(
