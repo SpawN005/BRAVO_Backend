@@ -3,7 +3,7 @@ const Team = require("../models/team");
 const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
-
+const UserModel = require("../models/users");
 const getMatchStatsByMatchId = async (matchId, teamId1, teamId2) => {
   try {
     const match = await Match.findById(matchId);
@@ -203,7 +203,27 @@ const getMatch = async (matchId) => {
     throw error;
   }
 };
+const getGenerals = async () => {
+  try {
+    const numberOfTeams = await Team.countDocuments();
+    const numberOfTournaments = await Tournament.countDocuments();
 
+    const usersWithPermissions = await UserModel.findByPermissionLevel({
+      $in: [3, 4],
+    });
+
+    const countUsersWithPermissions = usersWithPermissions.length;
+
+    return {
+      numberOfTeams: numberOfTeams,
+      numberOfTournaments: numberOfTournaments,
+      countUsersWithPermissions: countUsersWithPermissions,
+    };
+  } catch (error) {
+    console.error("Error getting stats:", error);
+    throw error;
+  }
+};
 const getMatchStats = async (matchId, teamId) => {
   console.log(teamId);
   try {
@@ -738,4 +758,5 @@ module.exports = {
   getMatch,
   getMatchStatsByMatchId,
   getMatchStatsByMatchIdPost,
+  getGenerals,
 };
