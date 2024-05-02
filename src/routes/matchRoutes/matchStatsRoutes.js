@@ -184,7 +184,6 @@ router.post("/updateTeamWin/:matchId", async (req, res) => {
   try {
     const matchId = req.params.matchId;
 
-    const { team1Id, team2Id } = req.body;
     const match = await Match.findById(matchId);
 
     if (!match) {

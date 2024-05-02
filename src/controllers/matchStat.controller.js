@@ -317,6 +317,7 @@ const updateTeamWin = async (match) => {
     } else if (scoreTeam2 == scoreTeam1) {
       await Team.updateOne({ _id: match.team2._id }, { $inc: { nul: 1 } });
       await Team.updateOne({ _id: match.team1._id }, { $inc: { nul: 1 } });
+      await Match.updateOne({ _id: match._id }, { isWinner: null });
       s1 = k * (0.5 - we);
       s2 = k * (0.5 - we);
     }
@@ -339,10 +340,15 @@ const updateTeamWin = async (match) => {
         if (!team1Standings || !team2Standings) {
           throw new Error("Standings not found for one or both teams");
         }
+        console.log(team1Standings);
+        console.log(team2Standings);
         team1Standings.gamesPlayed += 1;
         team2Standings.gamesPlayed += 1;
-        console.log(tournament.rules.pointsPerWin);
-        if (match.isWinner === match.team1) {
+
+        if (
+          !match.isWinner &&
+          match?.isWinner?.toString() === match?.team1?.toString()
+        ) {
           team1Standings.points += tournament.rules.pointsPerWin;
           team1Standings.wins += 1;
           team1Standings.goalsFor += scoreTeam1;
@@ -353,7 +359,7 @@ const updateTeamWin = async (match) => {
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference += scoreTeam2 - scoreTeam1;
-        } else if (match.isWinner === "DRAW") {
+        } else if (!match.isWinner) {
           team1Standings.points += tournament.rules.pointsPerDraw;
           team1Standings.draws += 1;
           team1Standings.goalsFor += scoreTeam1;
