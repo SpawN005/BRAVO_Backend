@@ -625,6 +625,87 @@ const patchTMatchById = async (id, updates) => {
   }
 };
 
+const getAllLiveMatches = async () => {
+
+  try {
+    const liveMatches = await matches.find({ status: "LIVE" }).populate('team1 team2');
+    
+    const liveMatchesWithStats = await Promise.all(liveMatches.map(async (match) => {
+      const matchStatsTeam1 = await getMatchStatsByMatchIdPost(match._id);
+      const matchStatsTeam2 = await getMatchStatsByMatchIdPost(match._id);
+
+      return {
+        ...match.toObject(), // Convert Mongoose document to plain object
+        matchStatsTeam1,
+        matchStatsTeam2,
+      };
+    }));
+
+    return liveMatchesWithStats;
+    
+  } catch (error) {
+    console.error("Error retrieving live matches:", error);
+    throw new Error("Error retrieving live matches.");
+  }
+};
+
+const getMatchStatsByMatchIdPost = async (matchId) => {
+  try {
+    const matchStatsTeam1 = await MatchStats.findOne({ match: matchId }).populate('team');
+    const matchStatsTeam2 = await MatchStats.findOne({ match: matchId, team: { $ne: matchStatsTeam1.team._id } }).populate('team');
+    
+    if (!matchStatsTeam1 || !matchStatsTeam2) {
+      throw { status: 404, message: "Match stats not found for one or both teams." };
+    }
+
+    // Helper function to fetch player details
+    const fetchPlayerDetails = async (players, isDirectIds = false) => {
+      return await Promise.all(players.map(async (entry) => {
+        const playerId = isDirectIds ? entry : entry.player;
+        const playerDetails = await Player.findById(playerId);
+        return playerDetails ? `${playerDetails.firstName} ${playerDetails.lastName}` : null;
+      }));
+    };
+
+    // Fetch player details for both teams for all relevant fields
+    const detailsFetchers = async (stats) => {
+      return {
+        scorers: await fetchPlayerDetails(stats.scorers),
+        redCards: await fetchPlayerDetails(stats.redCards, true),
+        yellowCards: await fetchPlayerDetails(stats.yellowCards.map(card => ({ player: card.player }))),
+        assisters: await fetchPlayerDetails(stats.assisters)
+      };
+    };
+
+    const [team1Details, team2Details] = await Promise.all([detailsFetchers(matchStatsTeam1), detailsFetchers(matchStatsTeam2)]);
+
+    // Assemble match stats with player names instead of IDs
+    const assembleStats = (stats, details) => ({
+      ...stats.toObject(),
+      team: stats.team.name,
+      scorers: details.scorers,
+      redCards: details.redCards,
+      yellowCards: details.yellowCards,
+      assisters: details.assisters
+    });
+
+    const matchStatsTeam1WithNames = assembleStats(matchStatsTeam1, team1Details);
+    const matchStatsTeam2WithNames = assembleStats(matchStatsTeam2, team2Details);
+
+    console.log("Team 1 Stats:", matchStatsTeam1WithNames);
+    console.log("Team 2 Stats:", matchStatsTeam2WithNames);
+
+    return { matchStatsTeam1: matchStatsTeam1WithNames, matchStatsTeam2: matchStatsTeam2WithNames };
+  } catch (error) {
+    console.error("Error getting match stats by match ID:", error);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
+  }
+};
+
+
 module.exports = {
   getTournamentById,
   getTeamsInTournament,
@@ -642,4 +723,5 @@ module.exports = {
   getLiveMatches,
   getMatcheByTeams,
   determineTopTeams,
+  getAllLiveMatches
 };
