@@ -231,7 +231,7 @@ exports.addTournament = async (userId, tournamentId) => {
     }
 
     // Check if the user has an active subscription or solde > 0
-    if ((user.abonnement.status !== 'active') && user.userIdentity.solde <= 0) {
+      if ((!user.abonnement||user.abonnement.status !== 'active') && user.userIdentity.solde <= 0) {
       throw new Error("Subscription is not active and solde is insufficient to create a tournament");
     }
 
