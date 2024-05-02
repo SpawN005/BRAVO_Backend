@@ -223,7 +223,32 @@ io.on("connection", (socket) => {
     }
   });
 });
+app.get('/api/v1/user-solde/:userId', async (req, res) => {
+  const userId = req.params.userId;
 
+  try {
+    // Assuming User is your mongoose model for user data
+    const user = await User.findById(userId);
+    console.log(user);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Extract the solde from the user object
+    const solde = user.userIdentity.solde;
+    console.log(solde);
+
+    // Return the solde in the response
+    res.status(200).json({solde});
+
+    
+    
+  } catch (error) {
+    console.error('Error retrieving user solde:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
 // Start the server
 server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
