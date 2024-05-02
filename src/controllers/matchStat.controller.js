@@ -207,6 +207,143 @@
             // Player is already in the assisters array, update their assist
             existingAssister.assists = (existingAssister.assists || 0) + 1;
 
+    return matchStats;
+  } catch (error) {
+    console.error("Error getting match stats:", error);
+    throw error;
+  }
+};
+const updateTeamWin = async (match) => {
+  try {
+    var k, s1, s2;
+    const we = 0.5;
+    switch (match.stage) {
+      case "GROUP_STAGE":
+      case "KNOCKOUT_STAGE":
+        k = 40;
+        break;
+      case "KNOCKOUT":
+        k = 30;
+        break;
+      case "LEAGUE":
+        k = 20;
+        break;
+    }
+    console.log(match);
+    // Récupérer les statistiques du match pour chaque équipe
+    const matchStatsTeam1 = await getMatchStats(match._id, match.team1._id);
+    const matchStatsTeam2 = await getMatchStats(match._id, match.team2._id);
+
+    // Vérifier le score de chaque équipe
+    const scoreTeam1 = matchStatsTeam1.score;
+    const scoreTeam2 = matchStatsTeam2.score;
+    let winner;
+
+    // Mettre à jour l'attribut 'win' du modèle 'Team' en fonction du score
+    if (scoreTeam1 > scoreTeam2) {
+      await Team.updateOne({ _id: match.team1._id }, { $inc: { win: 1 } });
+      await Team.updateOne({ _id: match.team2._id }, { $inc: { lose: 1 } });
+      await Match.updateOne({ _id: match._id }, { isWinner: match.team1._id });
+      switch (scoreTeam1 - scoreTeam2) {
+        case 1:
+          s1 = k * (1 - we);
+          break;
+        case 2:
+          s1 = k + (k / 2) * (1 - we);
+          break;
+        case 3:
+          s1 = k + ((k * 3) / 4) * (1 - we);
+          break;
+        default:
+          s1 = k + k * (3 / 4 + (scoreTeam1 - scoreTeam2 - 3) / 8) * (1 - we);
+          break;
+      }
+      s2 = k * -we;
+
+      winner = match.team1._id;
+    } else if (scoreTeam2 > scoreTeam1) {
+      await Team.updateOne({ _id: match.team2._id }, { $inc: { win: 1 } });
+      await Team.updateOne({ _id: match.team1._id }, { $inc: { lose: 1 } });
+      await Match.updateOne({ _id: match._id }, { isWinner: match.team2._id });
+      switch (scoreTeam2 - scoreTeam1) {
+        case 1:
+          s2 = k * (1 - we);
+          break;
+        case 2:
+          s2 = k + (k / 2) * (1 - we);
+          break;
+        case 3:
+          s2 = k + ((k * 3) / 4) * (1 - we);
+          break;
+        default:
+          s2 = k + k * (3 / 4 + (scoreTeam1 - scoreTeam2 - 3) / 8) * (1 - we);
+          break;
+      }
+      s1 = k * -we;
+      winner = match.team2._id;
+    } else if (scoreTeam2 == scoreTeam1) {
+      await Team.updateOne({ _id: match.team2._id }, { $inc: { nul: 1 } });
+      await Team.updateOne({ _id: match.team1._id }, { $inc: { nul: 1 } });
+      s1 = k * (0.5 - we);
+      s2 = k * (0.5 - we);
+    }
+    await Team.updateOne({ _id: match.team1._id }, { $inc: { score: s1 } });
+    await Team.updateOne({ _id: match.team2._id }, { $inc: { score: s2 } });
+    await Match.updateOne({ _id: match._id }, { status: "FINISHED" });
+    console.log(match.stage);
+    switch (match.stage) {
+      case "LEAGUE":
+      case "GROUP_STAGE":
+        const tournament = await Tournament.findById(match.tournament._id);
+
+        const team1Standings = tournament.standings.find(
+          (standing) => String(standing.team) === String(match.team1)
+        );
+        const team2Standings = tournament.standings.find(
+          (standing) => String(standing.team) === String(match.team2)
+        );
+
+        if (!team1Standings || !team2Standings) {
+          throw new Error("Standings not found for one or both teams");
+        }
+        team1Standings.gamesPlayed += 1;
+        team2Standings.gamesPlayed += 1;
+        console.log(tournament.rules.pointsPerWin);
+        if (match.isWinner === match.team1) {
+          team1Standings.points += tournament.rules.pointsPerWin;
+          team1Standings.wins += 1;
+          team1Standings.goalsFor += scoreTeam1;
+          team1Standings.goalsAgainst += scoreTeam2;
+          team1Standings.goalDifference += scoreTeam1 - scoreTeam2;
+
+          team2Standings.losses += 1;
+          team2Standings.goalsFor += scoreTeam2;
+          team2Standings.goalsAgainst += scoreTeam1;
+          team2Standings.goalDifference += scoreTeam2 - scoreTeam1;
+        } else if (match.isWinner === "DRAW") {
+          team1Standings.points += tournament.rules.pointsPerDraw;
+          team1Standings.draws += 1;
+          team1Standings.goalsFor += scoreTeam1;
+          team1Standings.goalsAgainst += scoreTeam2;
+
+          team2Standings.points += tournament.rules.pointsPerDraw;
+          team2Standings.draws += 1;
+          team2Standings.goalsFor += scoreTeam2;
+          team2Standings.goalsAgainst += scoreTeam1;
+        } else {
+          team2Standings.points += tournament.rules.pointsPerWin;
+          team2Standings.wins += 1;
+          team2Standings.goalsFor += scoreTeam2;
+          team2Standings.goalsAgainst += scoreTeam1;
+          team2Standings.goalDifference += scoreTeam2 - scoreTeam1;
+
+          team1Standings.losses += 1;
+          team1Standings.goalsFor += scoreTeam1;
+          team1Standings.goalsAgainst += scoreTeam2;
+          team1Standings.goalDifference += scoreTeam1 - scoreTeam2;
+        }
+
+
             // Save the updated assist to the Player model
             await Player.findByIdAndUpdate(
               assisterPlayerId,

@@ -186,7 +186,7 @@ const getAllTeamsInTournament = async (tournamentId) => {
     const teams = [];
 
     // Check the type of the tournament
-    switch (tournament.rules?.type) {
+    switch (tournament?.rules?.type) {
       case "LEAGUE":
       case "GROUP_KNOCKOUT":
         // Iterate through groups and teams
@@ -227,7 +227,7 @@ const createGroupMatches = async (tournamentId) => {
       throw { status: 404, message: "Tournament not found" };
     }
 
-    if (tournament.rules?.type === "LEAGUE") {
+    if (tournament?.rules?.type === "LEAGUE") {
       const groupTeams = tournament.groups.flatMap((group) => group.teams);
 
       for (let i = 0; i < groupTeams.length - 1; i++) {
@@ -249,7 +249,7 @@ const createGroupMatches = async (tournamentId) => {
           matches.push(savedMatch);
         }
       }
-    } else if (tournament.rules?.type === "KNOCKOUT") {
+    } else if (tournament?.rules?.type === "KNOCKOUT") {
       for (const group of tournament.groups) {
         const groupTeams = group.teams.map((team) => team._id);
 
@@ -417,10 +417,12 @@ const getLiveMatches = async () => {
     const liveMatches = await Match.find({ status: "LIVE" }).populate(
       "team1 team2"
     );
-
+    console.log(liveMatches);
     // Parcourir chaque match en direct
     const liveMatchesWithStats = await Promise.all(
       liveMatches.map(async (match) => {
+        console.log("MatchStatController:", MatchStatController);
+
         // Obtenir les matchstats pour team1
         const matchStatsTeam1 = await MatchStatController.getMatchStats(
           match._id,
@@ -604,6 +606,7 @@ const createGroupKnockoutMatches = async (tournamentId) => {
 };
 const patchTMatchById = async (id, updates) => {
   try {
+    console.log("updates: ",updates)
     const updatedMatch = await Match.findByIdAndUpdate(id, updates, {
       new: true,
     });
