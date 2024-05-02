@@ -57,8 +57,8 @@ const stripeSession = async (plan) => {
           quantity: 1,
         },
       ],
-      success_url: "http://localhost:3000/Stripe/success",
-      cancel_url: "http://localhost:3000/cancel",
+      success_url: "https://bravo-frontend-psi.vercel.app/Stripe/success",
+      cancel_url: "https://bravo-frontend-psi.vercel.app/:3000/cancel",
     });
     return session;
   } catch (e) {
