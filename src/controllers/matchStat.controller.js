@@ -400,7 +400,7 @@ const updateTeamWin = async (match) => {
         } else {
           await tournamentController.updateOne(
             { _id: match.tournament._id },
-            { tournamentWinner: match.isWinner }
+            { tournamentWinner: winner }
           );
         }
         break;
