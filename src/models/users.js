@@ -39,6 +39,10 @@ const userIdentitySchema = mongoose.Schema(
       type: String,
       // required: true,
     },
+      solde: {
+      type: Number,
+      default: 5,
+    },
     lastName: {
       type: String,
       // required: true,
