@@ -5,8 +5,6 @@ const Match = require("../../models/matches");
 
 router.get("/GeneralStats", async (req, res) => {
   try {
-    
-
     const generalStats = await matchStatController.getGenerals();
     res.status(200).json(generalStats);
   } catch (error) {
@@ -104,15 +102,29 @@ router.post("/red-card/:matchId", async (req, res) => {
   }
 });
 
-router.get("/matches/:matchId/stat", async (req, res) => {
+// router.get("/matches/:matchId/stat", async (req, res) => {
+//   try {
+//     const { matchId } = req.params;
+//     const { teamId1, teamId2 } = req.body;
+//     console.log(matchId, teamId1, teamId2)
+//     const matchStats = await matchStatController.getMatchStatsByMatchId(
+//       matchId,
+//       teamId1,
+//       teamId2
+//     );
+//     res.status(200).json(matchStats);
+//   } catch (error) {
+//     res
+//       .status(error.status || 500)
+//       .json({ message: error.message || "Internal Server Error" });
+//   }
+// });
+
+router.post("/matches/:matchId/stat", async (req, res) => {
   try {
     const { matchId } = req.params;
-    const { teamId1, teamId2 } = req.body;
-
-    const matchStats = await matchStatController.getMatchStatsByMatchId(
-      matchId,
-      teamId1,
-      teamId2
+    const matchStats = await matchStatController.getMatchStatsByMatchIdPost(
+      matchId
     );
     res.status(200).json(matchStats);
   } catch (error) {
@@ -131,12 +143,12 @@ router.post("/lineup/:matchId", async (req, res) => {
       idteam,
       players
     );
-
     res.json(result);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
+
 router.get("/:matchId/:teamId", async (req, res) => {
   try {
     const matchId = req.params.matchId;
@@ -246,6 +258,5 @@ router.get("/lineup/:matchId/:teamId", async (req, res) => {
     }
   }
 });
-
 
 module.exports = router;

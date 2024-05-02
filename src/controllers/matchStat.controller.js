@@ -3,7 +3,6 @@ const Team = require("../models/team");
 const Match = require("../models/matches");
 const MatchStats = require("../models/matchStats");
 const Player = require("../models/players");
-const UserModel = require("../models/users");
 
 const getMatchStatsByMatchId = async (matchId, teamId1, teamId2) => {
   try {
@@ -322,6 +321,7 @@ const updateTeamWin = async (match) => {
         }
         team1Standings.gamesPlayed += 1;
         team2Standings.gamesPlayed += 1;
+        console.log(tournament.rules.pointsPerWin);
         if (match.isWinner === match.team1) {
           team1Standings.points += tournament.rules.pointsPerWin;
           team1Standings.wins += 1;
@@ -644,32 +644,89 @@ const addRedCard = async (idmatch, idplayer, idteam) => {
     throw new Error("Internal Server Error");
   }
 };
-
-const getGenerals = async () => {
+const getMatchStatsByMatchIdPost = async (matchId) => {
   try {
-    const numberOfTeams = await Team.countDocuments();
-    const numberOfTournaments = await Tournament.countDocuments();
+    const matchStatsTeam1 = await MatchStats.findOne({
+      match: matchId,
+    }).populate("team");
+    const matchStatsTeam2 = await MatchStats.findOne({
+      match: matchId,
+      team: { $ne: matchStatsTeam1.team._id },
+    }).populate("team");
 
-    const usersWithPermissions = await UserModel.findByPermissionLevel({
-      $in: [3, 4],
-    })
-  
-    const countUsersWithPermissions = usersWithPermissions.length;
+    if (!matchStatsTeam1 || !matchStatsTeam2) {
+      throw {
+        status: 404,
+        message: "Match stats not found for one or both teams.",
+      };
+    }
+
+    // Helper function to fetch player details
+    const fetchPlayerDetails = async (players, isDirectIds = false) => {
+      return await Promise.all(
+        players.map(async (entry) => {
+          const playerId = isDirectIds ? entry : entry.player;
+          const playerDetails = await Player.findById(playerId);
+          return playerDetails
+            ? `${playerDetails.firstName} ${playerDetails.lastName}`
+            : null;
+        })
+      );
+    };
+
+    // Fetch player details for both teams for all relevant fields
+    const detailsFetchers = async (stats) => {
+      return {
+        scorers: await fetchPlayerDetails(stats.scorers),
+        redCards: await fetchPlayerDetails(stats.redCards, true),
+        yellowCards: await fetchPlayerDetails(
+          stats.yellowCards.map((card) => ({ player: card.player }))
+        ),
+        assisters: await fetchPlayerDetails(stats.assisters),
+      };
+    };
+
+    const [team1Details, team2Details] = await Promise.all([
+      detailsFetchers(matchStatsTeam1),
+      detailsFetchers(matchStatsTeam2),
+    ]);
+
+    // Assemble match stats with player names instead of IDs
+    const assembleStats = (stats, details) => ({
+      ...stats.toObject(),
+      team: stats.team.name,
+      scorers: details.scorers,
+      redCards: details.redCards,
+      yellowCards: details.yellowCards,
+      assisters: details.assisters,
+    });
+
+    const matchStatsTeam1WithNames = assembleStats(
+      matchStatsTeam1,
+      team1Details
+    );
+    const matchStatsTeam2WithNames = assembleStats(
+      matchStatsTeam2,
+      team2Details
+    );
+
+    console.log("Team 1 Stats:", matchStatsTeam1WithNames);
+    console.log("Team 2 Stats:", matchStatsTeam2WithNames);
 
     return {
-      numberOfTeams: numberOfTeams,
-      numberOfTournaments: numberOfTournaments,
-      countUsersWithPermissions: countUsersWithPermissions,
+      matchStatsTeam1: matchStatsTeam1WithNames,
+      matchStatsTeam2: matchStatsTeam2WithNames,
     };
   } catch (error) {
-    console.error("Error getting stats:", error);
-    throw error;
+    console.error("Error getting match stats by match ID:", error);
+    throw {
+      status: error.status || 500,
+      message: error.message || "Internal Server Error",
+    };
   }
 };
 
-
 module.exports = {
-  getGenerals,
   scoreGoal,
   getMatchStats,
   cancelGoal,
@@ -680,4 +737,5 @@ module.exports = {
   startMatch,
   getMatch,
   getMatchStatsByMatchId,
+  getMatchStatsByMatchIdPost,
 };

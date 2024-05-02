@@ -87,7 +87,7 @@ var TournamentsController = {
       })
       .populate({
         path: "groups.teams",
-        select: "name ",
+        select: "name logo",
       })
       .exec(function (err, tournament) {
         if (err) {

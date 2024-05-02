@@ -193,7 +193,15 @@ router.get("/goupknockout/gettopteams/:tournamentId", async (req, res) => {
       .json({ message: error.message || "Internal Server Error" });
   }
 });
-
+router.get("/livematches", async (req, res) => {
+  try {
+    const liveMatches = await MatchController.getAllLiveMatches();
+    res.status(200).json(liveMatches);
+  } catch (error) {
+    console.error("Error retrieving live matches:", error);
+    res.status(500).json({ error: "Error retrieving live matches." });
+  }
+});
 router.get("/:matchId", async (req, res) => {
   try {
     const matchId = req.params.matchId;
@@ -334,11 +342,9 @@ router.get("/matchess/:teamId", async (req, res) => {
     const liveMatches = await MatchController.getMatchestatByTeamId(teamId);
     res.json(liveMatches);
   } catch (error) {
-    res
-      .status(500)
-      .json({
-        error: "Une erreur est survenue lors de la récupération des matches.",
-      });
+    res.status(500).json({
+      error: "Une erreur est survenue lors de la récupération des matches.",
+    });
   }
 });
 module.exports = router;
