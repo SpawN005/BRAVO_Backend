@@ -1,7 +1,9 @@
 var UserModel = require("../models/users");
-var MatchModel=require("../models/matches")
+var MatchModel = require("../models/matches");
 var crypto = require("crypto");
 const { generateRandomPassword } = require("../utils/passwordUtils"); // Adjust the path as needed
+const team = require("../models/team");
+const tournament = require("../models/tournament");
 
 //-------------------------------------------------------------
 // Inserting
@@ -16,15 +18,15 @@ exports.insert = (req, res) => {
     })
     .catch(() => {
       const rolePermissionMapping = {
-        'OBSERVER': 1,
-        'REFEREE': 2,
-        'MANAGER': 3,
-        'ORGANIZER': 4
+        OBSERVER: 1,
+        REFEREE: 2,
+        MANAGER: 3,
+        ORGANIZER: 4,
       };
 
       // Determine permission level either from the role or directly from the request
-      let permissionLevel = req.body.role 
-        ? rolePermissionMapping[req.body.role.toUpperCase()] 
+      let permissionLevel = req.body.role
+        ? rolePermissionMapping[req.body.role.toUpperCase()]
         : req.body.permissionLevel;
 
       let passwordToHash = req.body.password;
@@ -32,7 +34,9 @@ exports.insert = (req, res) => {
       // If the role leads to permission level 1 or 2, or it's set directly, generate a random password
       if (!passwordToHash && [1, 2].includes(permissionLevel)) {
         const randomPassword = generateRandomPassword();
-        console.log(`Generated password for ${req.body.email}: ${randomPassword}`);
+        console.log(
+          `Generated password for ${req.body.email}: ${randomPassword}`
+        );
         // sendPasswordEmail(req.body.email, randomPassword); // Implement this function as needed
 
         passwordToHash = randomPassword;
@@ -40,7 +44,10 @@ exports.insert = (req, res) => {
 
       // Hash the password
       let salt = crypto.randomBytes(16).toString("base64");
-      let hash = crypto.createHmac("sha512", salt).update(passwordToHash).digest("base64");
+      let hash = crypto
+        .createHmac("sha512", salt)
+        .update(passwordToHash)
+        .digest("base64");
       req.body.password = salt + "$" + hash;
 
       let newUser = {
@@ -48,10 +55,10 @@ exports.insert = (req, res) => {
           email: req.body.email,
           firstName: req.body.firstName,
           lastName: req.body.lastName,
-          password: req.body.password
+          password: req.body.password,
         },
         permissionLevel: permissionLevel,
-        tournamentIds: req.body.tournamentId ? [req.body.tournamentId] : []
+        tournamentIds: req.body.tournamentId ? [req.body.tournamentId] : [],
       };
 
       UserModel.createUser(newUser).then((result) => {
@@ -74,9 +81,6 @@ exports.insert = (req, res) => {
       });
     });
 };
-
-
-
 
 //-------------------------------------------------------------
 // Fetching by Id
@@ -125,7 +129,6 @@ exports.patchById = (req, res) => {
         message: "User not found, retry with a valid userId.",
       })
     );
-    
 };
 //-------------------------------------------------------------
 // Fetching users
@@ -229,13 +232,13 @@ exports.getObservers = (req, res) => {
 exports.getAvailableObservers = async (req, res) => {
   try {
     const observers = await UserModel.findByPermissionLevel(1);
-    
+
     const matches = await MatchModel.findByDate(req.params.date);
-    const assignedObserverIds = matches.map(match => match.observer);
-    const availableObservers = observers.filter(observer => {
-      return !assignedObserverIds.find(id => id.equals(observer._id));
+    const assignedObserverIds = matches.map((match) => match.observer);
+    const availableObservers = observers.filter((observer) => {
+      return !assignedObserverIds.find((id) => id.equals(observer._id));
     });
-    
+
     res.status(200).send({
       code: 200,
       status: "success",
@@ -283,11 +286,11 @@ exports.getAvailableReferees = async (req, res) => {
   try {
     const referees = await UserModel.findByPermissionLevel(2);
     const matches = await MatchModel.findByDate(req.params.date);
-    const assignedRefereeIds = matches.map(match => match.referee);
-    const availablReferees = referees.filter(referee => {
-      return !assignedRefereeIds.find(id => id.equals(referee._id));
+    const assignedRefereeIds = matches.map((match) => match.referee);
+    const availablReferees = referees.filter((referee) => {
+      return !assignedRefereeIds.find((id) => id.equals(referee._id));
     });
-        res.status(200).send({
+    res.status(200).send({
       code: 200,
       status: "success",
       data: availablReferees,
@@ -429,6 +432,144 @@ exports.getTournaments = async (req, res) => {
       code: 500,
       status: "error",
       message: "An error occurred while fetching user tournaments",
+      error: error.message,
+    });
+  }
+};
+exports.getStats = async (req, res) => {
+  try {
+    // Fetch the user based on userId
+    const user = await UserModel.findById(req.params.userId);
+    console.log("aze", user);
+    // If user not found, return an error response
+    if (!user) {
+      return res.status(404).json({
+        code: 404,
+        status: "not found",
+        message: "User not found. Please provide a valid userId.",
+      });
+    }
+
+    // Initialize an object to store user statistics
+    const userStats = {};
+    // Handle statistics based on user's permission level
+    switch (user.permissionLevel) {
+      case 1:
+        // Observer statistics
+        userStats.upcomingMatches = await MatchModel.countDocuments({
+          observer: user._id,
+          status: "UPCOMING",
+        });
+        userStats.finishedMatches = await MatchModel.countDocuments({
+          observer: user._id,
+          status: "FINISHED",
+        });
+        userStats.liveMatches = await MatchModel.countDocuments({
+          observer: user._id,
+          status: "LIVE",
+        });
+        break;
+
+      case 3:
+        // Manager statistics
+        const teamsManaged = await team
+          .find({ manager: user._id })
+          .select("players");
+
+        userStats.playerCount = teamsManaged.reduce(
+          (sum, team) => sum + team.players.length,
+          0
+        );
+
+        userStats.matchLost = await team
+          .find({
+            manager: user._id,
+          })
+          .select("lose -_id")
+          .lean();
+        userStats.matchWon = await team
+          .find({
+            manager: user._id,
+          })
+          .select("win -_id")
+          .lean();
+        userStats.matchNul = await team
+          .find({
+            manager: user._id,
+          })
+          .select("nul -_id")
+          .lean();
+
+        userStats.matchPlayed =
+          userStats.matchNul[0].nul +
+          userStats.matchWon[0].win +
+          userStats.matchLost[0].lose;
+        const managedTeams = await team
+          .find({ manager: user._id })
+          .select("_id")
+          .lean();
+
+        const matchesPlayed = await MatchModel.find({
+          $or: [
+            { team1: { $in: managedTeams[0] } },
+            { team2: { $in: managedTeams[0] } },
+          ],
+          tournament: { $exists: true },
+        })
+          .select("tournament")
+          .lean();
+
+        const uniqueTournaments = new Set(
+          matchesPlayed.map((match) => match.tournament)
+        );
+
+        userStats.tournamentPlayed = uniqueTournaments.size;
+
+        break;
+
+      case 4:
+        // Organizer statistics
+        const currentDate = new Date();
+
+        // Number of finished tournaments
+        userStats.finishedTournaments = await tournament.countDocuments({
+          _id: { $in: user.tournamentIds },
+          endDate: { $lt: currentDate }, // End date is in the past
+        });
+
+        // Number of ongoing tournaments
+        userStats.ongoingTournaments = await tournament.countDocuments({
+          _id: { $in: user.tournamentIds },
+          startDate: { $lte: currentDate }, // Start date is in the past or today
+          endDate: { $gte: currentDate }, // End date is in the future or today
+        });
+
+        // Total count of tournaments
+        userStats.tournamentCount = user.tournamentIds.length;
+        break;
+
+      default:
+        // Handle invalid permission levels
+        return res.status(400).json({
+          code: 400,
+          status: "bad request",
+          message: "Invalid permission level.",
+        });
+    }
+    userStats.permissionLevel = user.permissionLevel;
+
+    // Return the collected statistics
+    res.status(200).json({
+      code: 200,
+      status: "success",
+      data: userStats,
+    });
+  } catch (error) {
+    console.error("Error fetching user statistics:", error);
+    res.status(500).json({
+      code: 500,
+      status: "error",
+      message: "An error occurred while fetching user statistics.",
       error: error.message,
     });
   }

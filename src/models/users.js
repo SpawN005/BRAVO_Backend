@@ -50,16 +50,21 @@ const userIdentitySchema = mongoose.Schema(
   },
   { _id: false }
 );
-const subscriptionSchema = mongoose.Schema({
-  sessionId: { type: String, required: true },
-  planId: { type: String },
-  startDate: { type: Date, default: Date.now() },
-  endDate: { type: Date },
-  status: { type: String, enum: ['active', 'cancelled', 'expired'], default: 'active' },
-  price : {type:String},
-  planType:{type: String}
-},
-{ _id: false }
+const subscriptionSchema = mongoose.Schema(
+  {
+    sessionId: { type: String, required: true },
+    planId: { type: String },
+    startDate: { type: Date, default: Date.now() },
+    endDate: { type: Date },
+    status: {
+      type: String,
+      enum: ["active", "cancelled", "expired"],
+      default: "active",
+    },
+    price: { type: String },
+    planType: { type: String },
+  },
+  { _id: false }
 );
 
 const userSchema = mongoose.Schema({
@@ -83,7 +88,7 @@ const userSchema = mongoose.Schema({
   tournamentIds: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Tournaments", 
+      ref: "Tournaments",
     },
   ],
 });
@@ -98,7 +103,7 @@ exports.createUser = (userData) => {
 exports.findById = (id) => {
   return User.findById(id).then((result) => {
     result = result.toJSON();
-    delete result._id;
+
     delete result.__v;
     return result;
   });
@@ -250,4 +255,3 @@ exports.getTournaments = async (id) => {
     throw error;
   }
 };
-

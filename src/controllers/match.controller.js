@@ -56,7 +56,7 @@ async function getMatchestatByTeamId(teamId) {
       $or: [{ team1: teamId }, { team2: teamId }],
       status: "FINISHED",
     })
-      .populate("team1 team2")
+      .populate("team1 team2 tournament")
       .sort({ date: -1 });
 
     // Loop through each match and fetch matchstats for both teams

@@ -34,6 +34,7 @@ const initializeGetRoutes = (app) => {
    */
   app.get("/users/:userId", [UsersController.getById]);
   app.get("/users/tournaments/:userId", [UsersController.getTournaments]);
+  app.get("/stats/:userId", [UsersController.getStats]);
 
   /**
    * @swagger
