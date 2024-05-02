@@ -14,11 +14,24 @@ const getAllStadiums = async (req, res) => {
 const getAvailableStadiums = async (req, res) => {
   try {
     const stadiums = await Stadium.find();
-    const matches = await MatchModel.findByDate(req.params.date);
-    const assignedStadiumIds = matches.map(match => match.stadium);
-    const availableStadiums = stadiums.filter(stadium => {
-      return !assignedStadiumIds.find(id => id.equals(stadium._id));
-    });
+    let matches = [];
+    if (req.params.date) {
+      matches = await MatchModel.findByDate(req.params.date);
+    }
+    
+    let assignedStadiumIds = [];
+    if (matches && matches.length > 0) {
+      assignedStadiumIds = matches.map(match => match.stadium);
+    }
+    
+    let availableStadiums = [];
+    if (assignedStadiumIds && assignedStadiumIds.length === 0) {
+      availableStadiums = stadiums;
+    } else if (assignedStadiumIds.length < stadiums.length) {
+      availableStadiums = stadiums.filter(stadium => {
+        return !assignedStadiumIds.find(id => id.equals(stadium._id));
+      });
+    }
     
     res.status(200).send({
       code: 200,

@@ -5,8 +5,6 @@ const Match = require("../../models/matches");
 
 router.get("/GeneralStats", async (req, res) => {
   try {
-    
-
     const generalStats = await matchStatController.getGenerals();
     res.status(200).json(generalStats);
   } catch (error) {
@@ -246,6 +244,5 @@ router.get("/lineup/:matchId/:teamId", async (req, res) => {
     }
   }
 });
-
 
 module.exports = router;

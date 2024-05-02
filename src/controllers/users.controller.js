@@ -230,11 +230,24 @@ exports.getAvailableObservers = async (req, res) => {
   try {
     const observers = await UserModel.findByPermissionLevel(1);
     
-    const matches = await MatchModel.findByDate(req.params.date);
-    const assignedObserverIds = matches.map(match => match.observer);
-    const availableObservers = observers.filter(observer => {
-      return !assignedObserverIds.find(id => id.equals(observer._id));
-    });
+    let matches = [];
+    if (req.params.date) {
+      matches = await MatchModel.findByDate(req.params.date);
+    }
+    
+    let assignedObserverIds = [];
+    if (matches && matches.length > 0) {
+      assignedObserverIds = matches.map(match => match.observer);
+    }
+    
+    let availableObservers = [];
+    if (assignedObserverIds && assignedObserverIds.length === 0) {
+      availableObservers = observers;
+    } else {
+      availableObservers = observers.filter(observer => {
+        return !assignedObserverIds.find(id => id.equals(observer._id));
+      });
+    }
     
     res.status(200).send({
       code: 200,
@@ -282,22 +295,36 @@ exports.getReferees = (req, res) => {
 exports.getAvailableReferees = async (req, res) => {
   try {
     const referees = await UserModel.findByPermissionLevel(2);
-    const matches = await MatchModel.findByDate(req.params.date);
-    const assignedRefereeIds = matches.map(match => match.referee);
-    const availablReferees = referees.filter(referee => {
-      return !assignedRefereeIds.find(id => id.equals(referee._id));
-    });
+    
+    let matches = [];
+    if (req.params.date) {
+      matches = await MatchModel.findByDate(req.params.date);
+    }
+    
+    let assignedRefereeIds = [];
+    if (matches && matches.length > 0) {
+      assignedRefereeIds = matches.map(match => match.referee);
+    }
+    
+    let availableReferees = [];
+    if (assignedRefereeIds && assignedRefereeIds.length === 0) {
+      availableReferees = referees;
+    } else {
+      availableReferees = referees.filter(referee => {
+        return !assignedRefereeIds.find(id => id.equals(referee._id));
+      });
+    }
         res.status(200).send({
       code: 200,
       status: "success",
-      data: availablReferees,
+      data: availableReferees,
     });
   } catch (error) {
-    console.error("Error fetching available observers:", error);
+    console.error("Error fetching available referees:", error);
     res.status(500).send({
       code: 500,
       status: "error",
-      message: "An error occurred while fetching available observers",
+      message: "An error occurred while fetching available referees",
       error: error.message,
     });
   }
