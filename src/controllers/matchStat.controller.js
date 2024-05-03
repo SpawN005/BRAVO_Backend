@@ -320,6 +320,7 @@ const updateTeamWin = async (match) => {
       await Match.updateOne({ _id: match._id }, { isWinner: null });
       s1 = k * (0.5 - we);
       s2 = k * (0.5 - we);
+      winner = null;
     }
     await Team.updateOne({ _id: match.team1._id }, { $inc: { score: s1 } });
     await Team.updateOne({ _id: match.team2._id }, { $inc: { score: s2 } });
