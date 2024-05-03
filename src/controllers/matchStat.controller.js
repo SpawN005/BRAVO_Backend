@@ -328,7 +328,7 @@ const updateTeamWin = async (match) => {
     switch (match.stage) {
       case "LEAGUE":
       case "GROUP_STAGE":
-        const tournament = await Tournament.findById(match.tournament._id);
+        const tournament = await Tournament.findById(match.tournament);
 
         const team1Standings = tournament.standings.find(
           (standing) => String(standing.team) === String(match.team1)
@@ -344,8 +344,8 @@ const updateTeamWin = async (match) => {
         console.log(team2Standings);
         team1Standings.gamesPlayed += 1;
         team2Standings.gamesPlayed += 1;
-
-        if (match?.isWinner?.toString() === match?.team1?.toString()) {
+        console.log("tournament", tournament);
+        if (winner?.toString() === match?.team1?.toString()) {
           team1Standings.points += tournament.rules.pointsPerWin;
           team1Standings.wins += 1;
           team1Standings.goalsFor += scoreTeam1;
@@ -356,7 +356,7 @@ const updateTeamWin = async (match) => {
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference += scoreTeam2 - scoreTeam1;
-        } else if (match?.isWinner?.toString() === match?.team2?.toString()) {
+        } else if (winner?.toString() === match?.team2?.toString()) {
           team2Standings.points += tournament.rules.pointsPerWin;
           team2Standings.wins += 1;
           team2Standings.goalsFor += scoreTeam2;
