@@ -383,11 +383,10 @@ const updateTeamWin = async (match) => {
         }
 
         await tournament.save();
-        console.log("first");
+
         break;
       case "KNOCKOUT":
       case "KNOCKOUT_STAGE":
-        console.log("first eeeeeeeeee");
         const nextM = await Match.findById(match.nextMatch);
         console.log("winner", match.isWinner);
         console.log(nextM);
@@ -399,7 +398,7 @@ const updateTeamWin = async (match) => {
           }
         } else {
           await tournamentController.updateOne(
-            { _id: match.tournament._id },
+            { _id: match.tournament },
             { tournamentWinner: winner }
           );
         }
