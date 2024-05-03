@@ -345,10 +345,7 @@ const updateTeamWin = async (match) => {
         team1Standings.gamesPlayed += 1;
         team2Standings.gamesPlayed += 1;
 
-        if (
-          !match.isWinner &&
-          match?.isWinner?.toString() === match?.team1?.toString()
-        ) {
+        if (match?.isWinner?.toString() === match?.team1?.toString()) {
           team1Standings.points += tournament.rules.pointsPerWin;
           team1Standings.wins += 1;
           team1Standings.goalsFor += scoreTeam1;
@@ -359,17 +356,7 @@ const updateTeamWin = async (match) => {
           team2Standings.goalsFor += scoreTeam2;
           team2Standings.goalsAgainst += scoreTeam1;
           team2Standings.goalDifference += scoreTeam2 - scoreTeam1;
-        } else if (!match.isWinner) {
-          team1Standings.points += tournament.rules.pointsPerDraw;
-          team1Standings.draws += 1;
-          team1Standings.goalsFor += scoreTeam1;
-          team1Standings.goalsAgainst += scoreTeam2;
-
-          team2Standings.points += tournament.rules.pointsPerDraw;
-          team2Standings.draws += 1;
-          team2Standings.goalsFor += scoreTeam2;
-          team2Standings.goalsAgainst += scoreTeam1;
-        } else {
+        } else if (match?.isWinner?.toString() === match?.team2?.toString()) {
           team2Standings.points += tournament.rules.pointsPerWin;
           team2Standings.wins += 1;
           team2Standings.goalsFor += scoreTeam2;
@@ -380,6 +367,16 @@ const updateTeamWin = async (match) => {
           team1Standings.goalsFor += scoreTeam1;
           team1Standings.goalsAgainst += scoreTeam2;
           team1Standings.goalDifference += scoreTeam1 - scoreTeam2;
+        } else {
+          team1Standings.points += tournament.rules.pointsPerDraw;
+          team1Standings.draws += 1;
+          team1Standings.goalsFor += scoreTeam1;
+          team1Standings.goalsAgainst += scoreTeam2;
+
+          team2Standings.points += tournament.rules.pointsPerDraw;
+          team2Standings.draws += 1;
+          team2Standings.goalsFor += scoreTeam2;
+          team2Standings.goalsAgainst += scoreTeam1;
         }
 
         await tournament.save();
