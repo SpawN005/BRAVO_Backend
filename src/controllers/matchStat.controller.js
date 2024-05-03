@@ -395,7 +395,7 @@ const updateTeamWin = async (match) => {
             await Match.updateOne({ _id: nextM._id }, { team2: winner });
           }
         } else {
-          await tournamentController.updateOne(
+          await Tournament.updateOne(
             { _id: match.tournament },
             { tournamentWinner: winner }
           );
